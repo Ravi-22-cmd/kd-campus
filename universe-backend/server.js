@@ -1,7 +1,9 @@
 process.on('uncaughtException', e => console.log('CRASH:', e.message));
 process.on('unhandledRejection', e => console.log('REJECT:', e));
 
-
+process.env.MONGO_URI  = 'mongodb+srv://universeAdmin:sF3Blh0DHUCCjG0X@cluster0.dd9h6ro.mongodb.net/universeDB?appName=Cluster0';
+process.env.JWT_SECRET = 'universe_super_secret_key_2026';
+process.env.PORT       = '3000';
 
 const express  = require('express');
 const mongoose = require('mongoose');
