@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniVerse — University Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f6ef7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KD Campus">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+<!-- ═══════════════════ AUTH SCREENS ═══════════════════ -->
+<div id="auth-screen" class="auth-screen active">
+  <div class="auth-bg">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+  <div class="auth-container">
+    <div class="auth-brand">
+      <div class="auth-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+           <path d="M18 2 L34 8 L34 20 Q34 30 18 36 Q2 30 2 20 L2 8 Z" fill="var(--accent)"/>
+           <path d="M18 5 L31 10 L31 20 Q31 28 18 33 Q5 28 5 20 L5 10 Z" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+           <text x="12" y="23" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Syne">K</text>
+           <text x="24" y="23" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Syne">D</text>
+           <polygon points="18,2 19.5,6 23,6 20.5,8.5 21.5,12 18,10 14.5,12 15.5,8.5 13,6 16.5,6" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <span class="auth-brand-name">KD Campus</span>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Sign In</button>
+      <button class="auth-tab" data-tab="signup">Register</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div class="auth-form active" id="login-form">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@university.edu" value="student@uni.edu">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" value="password123">
+      </div>
+      <div class="form-group">
+        <label>Sign in as</label>
+        <div class="role-selector">
+          <button class="role-btn active" data-role="student">🎓 Student</button>
+          <button class="role-btn" data-role="faculty">👨‍🏫 Faculty</button>
+          <button class="role-btn" data-role="admin">🏫 Admin</button>
+        </div>
+      </div>
+      <div class="form-divider"><span>or</span></div>
+      <div class="form-group">
+        <label>Phone OTP Login</label>
+        <div class="otp-row">
+          <input type="tel" id="login-phone" placeholder="+91 98765 43210">
+          <button class="btn-otp" onclick="sendOTP()">Send OTP</button>
+        </div>
+        <input type="text" id="otp-input" placeholder="Enter 6-digit OTP" style="margin-top:8px;display:none;">
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Sign In →</button>
+      <p class="auth-hint">Demo: Use any email/password to login with selected role</p>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div class="auth-form" id="signup-form">
+      <div class="form-row">
+        <div class="form-group"><label>First Name</label><input type="text" placeholder="John"></div>
+        <div class="form-group"><label>Last Name</label><input type="text" placeholder="Doe"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" placeholder="you@university.edu"></div>
+      <div class="form-group"><label>Phone</label><input type="tel" placeholder="+91 98765 43210"></div>
+      <div class="form-group">
+        <label>Register as</label>
+        <div class="role-selector">
+          <button class="role-btn active" data-role="student">🎓 Student</button>
+          <button class="role-btn" data-role="faculty">👨‍🏫 Faculty</button>
+        </div>
+      </div>
+      <div class="form-group"><label>Department</label>
+        <select><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>Management</option></select>
+      </div>
+      <div class="form-group"><label>Password</label><input type="password" placeholder="Create password"></div>
+      <button class="btn-primary" onclick="handleSignup()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div id="app" class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="auth-logo small">
+        <svg width="30" height="30" viewBox="0 0 36 36" fill="none">
+          <path d="M18 2 L34 8 L34 20 Q34 30 18 36 Q2 30 2 20 L2 8 Z" fill="var(--accent)"/>
+          <path d="M18 5 L31 10 L31 20 Q31 28 18 33 Q5 28 5 20 L5 10 Z" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <text x="12" y="23" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Syne">K</text>
+          <text x="24" y="23" text-anchor="middle" fill="white" font-size="12" font-weight="700" font-family="Syne">D</text>
+          <polygon points="18,2 19.5,6 23,6 20.5,8.5 21.5,12 18,10 14.5,12 15.5,8.5 13,6 16.5,6" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <span>KD Campus</span>
+      <button class="sidebar-close" onclick="toggleSidebar()">×</button>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebar-avatar">JS</div>
+      <div>
+        <div class="user-name" id="sidebar-name">John Smith</div>
+        <div class="user-role" id="sidebar-role">Student · CSE</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- Populated by JS -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">☀️</span> <span id="theme-label">Light Mode</span>
+      </button>
+      <button class="logout-btn" onclick="logout()">← Logout</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <header class="top-bar">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="top-bar-title" id="page-title">Dashboard</div>
+      <div class="top-bar-actions">
+        <button class="notif-btn" onclick="showPanel('notifications')">
+           <i class="fa-solid fa-bell"></i>
+           <span class="notif-badge">3</span>
+        </button>
+        <div class="user-mini" onclick="showPanel('profile')">
+          <div class="user-avatar small" id="top-avatar">JS</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area" id="content-area">
+      <!-- Dynamic content rendered here -->
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════ AI CHATBOT ═══════════════════ -->
+<div class="chatbot-fab" onclick="toggleChat()" id="chat-fab">
+  <span id="chat-fab-icon">🤖</span>
+</div>
+<div class="chatbot-window" id="chatbot-window">
+  <div class="chat-header">
+    <div>
+      <div style="font-weight:600">UniBot AI Assistant</div>
+      <div style="font-size:11px;opacity:.6">Always here to help • Powered by Claude</div>
+    </div>
+    <button onclick="toggleChat()">×</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg bot">
+      <div class="msg-bubble">Hi! 👋 I'm UniBot. Ask me about courses, fees, timetable, attendance, or anything university-related!</div>
+    </div>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">↑</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ NOTIFICATION PANEL ═══════════════════ -->
+<div class="slide-panel" id="notifications-panel">
+  <div class="panel-header">
+    <span>Notifications</span><button onclick="closePanel('notifications')">×</button>
+  </div>
+  <div class="panel-content">
+    <div class="notif-item unread">
+      <div class="notif-icon">📢</div>
+      <div><div class="notif-title">Mid-term Exam Schedule Released</div><div class="notif-time">2 hours ago</div></div>
+    </div>
+    <div class="notif-item unread">
+      <div class="notif-icon">📝</div>
+      <div><div class="notif-title">Assignment due: DBMS Lab Report</div><div class="notif-time">5 hours ago</div></div>
+    </div>
+    <div class="notif-item unread">
+      <div class="notif-icon">💰</div>
+      <div><div class="notif-title">Fee Payment Reminder - Due in 3 days</div><div class="notif-time">1 day ago</div></div>
+    </div>
+    <div class="notif-item">
+      <div class="notif-icon">🎓</div>
+      <div><div class="notif-title">New course material uploaded: ML Unit 4</div><div class="notif-time">2 days ago</div></div>
+    </div>
+    <div class="notif-item">
+      <div class="notif-icon">🏆</div>
+      <div><div class="notif-title">You ranked #3 in Data Structures</div><div class="notif-time">3 days ago</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
+
+<script src="App.js"></script>
+</body>
+</html>
