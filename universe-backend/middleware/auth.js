@@ -11,13 +11,13 @@ const protect = async (req, res, next) => {
     token = req.headers.authorization.split(' ')[1];
   }
   if (!token) {
-    return res.status(401).json({ success: false, message: 'Token nahi hai' });
+    return res.status(401).json({ success: false, message: 'Token not provided' });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET); // ← hardcode use karo
+    const decoded = jwt.verify(token, JWT_SECRET); // ← use hardcoded
     req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) {
-      return res.status(401).json({ success: false, message: 'User nahi mila' });
+      return res.status(401).json({ success: false, message: 'User not found' });
     }
     next();
   } catch(err) {
@@ -28,7 +28,7 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => (req, res, next) => {
   if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ success: false, message: 'Access nahi hai' });
+    return res.status(403).json({ success: false, message: 'Access denied' });
   }
   next();
 };

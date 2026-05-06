@@ -9,6 +9,14 @@ router.get('/', async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+router.get('/:id', async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id).populate('students', 'name email');
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+    res.json({ success: true, course });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 router.post('/', async (req, res) => {
   try {
     const course = await Course.create(req.body);

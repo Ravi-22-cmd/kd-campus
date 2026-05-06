@@ -16,11 +16,11 @@ router.get('/users', async (req, res) => {
     // Apne alawa sab users lo
     let query = { _id: { $ne: decoded.id }, isApproved: true };
 
-    // Student hain toh sirf faculty dikhao
+    // If student, show only faculty
     if (me.role === 'student') query.role = 'faculty';
-    // Faculty hain toh students + faculty dikhao
+    // If faculty, show students + faculty
     if (me.role === 'faculty') query.role = { $in: ['student','faculty'] };
-    // Admin sab dekh sakta hai
+    // Admin can see everything
     if (me.role === 'admin') query = { _id: { $ne: decoded.id } };
 
     const users = await User.find(query).select('name email role department');

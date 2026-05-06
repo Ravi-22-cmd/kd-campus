@@ -10,6 +10,14 @@ const userSchema = new mongoose.Schema({
   role:       { type: String, enum: ['student','faculty','admin'], default: 'student' },
   department: { type: String },
   avatar:     { type: String },
+  faceDescriptors: [[Number]],
+  resetPasswordToken: { type: String },
+  resetPasswordExpiry: { type: Date },
+
+  // Email OTP login
+  otpCodeHash:   { type: String },
+  otpCodeExpiry: { type: Date },
+
   isApproved: { type: Boolean, default: false },
   isActive:   { type: Boolean, default: true },
 }, { timestamps: true });
@@ -58,6 +66,35 @@ const marksSchema = new mongoose.Schema({
   remarks:   { type: String },
 }, { timestamps: true });
 
+// ── Exam Model ──
+const examSchema = new mongoose.Schema({
+  title:       { type: String, required: true },
+  course:      { type: String, required: true },
+  courseId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+  date:        { type: Date, required: true },
+  duration:    { type: Number, required: true },
+  totalMarks:  { type: Number, default: 100 },
+  description: { type: String },
+  type:        { type: String, enum: ['practice','scheduled'], default: 'practice' },
+  isActive:    { type: Boolean, default: true },
+  questions: [{
+    question: { type: String, required: true },
+    options:  [{ type: String, required: true }],
+    answer:   { type: Number, required: true }
+  }]
+}, { timestamps: true });
+
+// ── Exam Result Model ──
+const examResultSchema = new mongoose.Schema({
+  examId:        { type: mongoose.Schema.Types.ObjectId, ref: 'Exam', required: true },
+  studentId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  score:         { type: Number, required: true },
+  correctAnswers:{ type: Number, required: true },
+  totalQuestions:{ type: Number, required: true },
+  answers:       [{ type: Number }],
+  submittedAt:   { type: Date, default: Date.now }
+}, { timestamps: true });
+
 // ── Assignment Model ──
 const assignmentSchema = new mongoose.Schema({
   title:       { type: String, required: true },
@@ -99,13 +136,33 @@ const noticeSchema = new mongoose.Schema({
   isActive:   { type: Boolean, default: true },
 }, { timestamps: true });
 
+// ── Department Model ──
+const departmentSchema = new mongoose.Schema({
+  name:        { type: String, required: true, unique: true, trim: true },
+  code:        { type: String, required: true, unique: true, uppercase: true },
+  description: { type: String },
+  headFaculty: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  faculty:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  students:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  courses:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  email:       { type: String },
+  phone:       { type: String },
+  location:    { type: String },
+  established: { type: Date },
+  website:     { type: String },
+  isActive:    { type: Boolean, default: true },
+}, { timestamps: true });
+
 // ── Export all models ──
 module.exports = {
   User:       mongoose.model('User',       userSchema),
   Course:     mongoose.model('Course',     courseSchema),
-  Attendance: mongoose.model('Attendance', attendanceSchema),
-  Marks:      mongoose.model('Marks',      marksSchema),
-  Assignment: mongoose.model('Assignment', assignmentSchema),
-  Fee:        mongoose.model('Fee',        feeSchema),
-  Notice:     mongoose.model('Notice',     noticeSchema),
+  Attendance:  mongoose.model('Attendance',  attendanceSchema),
+  Marks:       mongoose.model('Marks',       marksSchema),
+  Exam:        mongoose.model('Exam',        examSchema),
+  ExamResult:  mongoose.model('ExamResult',  examResultSchema),
+  Assignment:  mongoose.model('Assignment',  assignmentSchema),
+  Fee:         mongoose.model('Fee',         feeSchema),
+  Notice:      mongoose.model('Notice',      noticeSchema),
+  Department:  mongoose.model('Department',  departmentSchema),
 };

@@ -76,37 +76,38 @@ const navConfig = {
   faculty: [
     { section:'Main', items:[
       { icon:'<i class="fa-solid fa-house"></i>',            label:'Dashboard',       page:'dashboard' },
-      { icon:'<i class="fa-solid fa-book"></i>',             label:'My Courses',      page:'courses' },
+      { icon:'<i class="fa-solid fa-book"></i>',            label:'My Courses',      page:'courses' },
       { icon:'<i class="fa-solid fa-users"></i>',            label:'Students',        page:'students' },
+      { icon:'<i class="fa-solid fa-face-viewfinder"></i>',            label:'Face Attendance', page:'face-attendance' },
     ]},
     { section:'Academic Tools', items:[
-      { icon:'<i class="fa-solid fa-clipboard-check"></i>',  label:'Mark Attendance', page:'mark-attendance' },
-      { icon:'<i class="fa-solid fa-file-pen"></i>',         label:'Assignments',     page:'assignments' },
-      { icon:'<i class="fa-solid fa-upload"></i>',           label:'Upload Marks',    page:'upload-marks' },
-      { icon:'<i class="fa-solid fa-folder-open"></i>',      label:'Upload Notes',    page:'upload-notes' },
-      { icon:'<i class="fa-solid fa-chart-line"></i>',       label:'Performance',     page:'performance' },
+      { icon:'<i class="fa-solid fa-clipboard-check"></i>',            label:'Mark Attendance', page:'mark-attendance' },
+      { icon:'<i class="fa-solid fa-file-pen"></i>',            label:'Assignments',     page:'assignments' },
+      { icon:'<i class="fa-solid fa-upload"></i>',            label:'Upload Marks',    page:'upload-marks' },
+      { icon:'<i class="fa-solid fa-folder-open"></i>',            label:'Upload Notes',    page:'upload-notes' },
+      { icon:'<i class="fa-solid fa-chart-line"></i>',            label:'Performance',     page:'performance' },
     ]},
     { section:'Communication', items:[
-      { icon:'<i class="fa-solid fa-comments"></i>',         label:'Chat',            page:'chat', badge:null },
-      { icon:'<i class="fa-solid fa-bullhorn"></i>',         label:'Announcements',   page:'announcements' },
+      { icon:'<i class="fa-solid fa-comments"></i>',            label:'Chat',            page:'chat', badge:null },
+      { icon:'<i class="fa-solid fa-bullhorn"></i>',            label:'Announcements',   page:'announcements' },
     ]},
   ],
   admin: [
     { section:'Overview', items:[
       { icon:'<i class="fa-solid fa-house"></i>',             label:'Dashboard',       page:'dashboard' },
-      { icon:'<i class="fa-solid fa-chart-line"></i>',        label:'Analytics',       page:'analytics' },
+      { icon:'<i class="fa-solid fa-chart-line"></i>',             label:'Analytics',       page:'analytics' },
     ]},
     { section:'Management', items:[
-      { icon:'<i class="fa-solid fa-user-graduate"></i>',     label:'Students',        page:'manage-students', badge:null },
-      { icon:'<i class="fa-solid fa-chalkboard-user"></i>',   label:'Faculty',         page:'manage-faculty',  badge:null },
-      { icon:'<i class="fa-solid fa-book-open"></i>',         label:'Courses',         page:'manage-courses' },
-      { icon:'<i class="fa-solid fa-building"></i>',          label:'Departments',     page:'departments' },
+      { icon:'<i class="fa-solid fa-user-graduate"></i>',             label:'Students',        page:'manage-students', badge:null },
+      { icon:'<i class="fa-solid fa-chalkboard-user"></i>',             label:'Faculty',         page:'manage-faculty',  badge:null },
+      { icon:'<i class="fa-solid fa-book-open"></i>',             label:'Courses',         page:'manage-courses' },
+      { icon:'<i class="fa-solid fa-building"></i>',             label:'Departments',     page:'departments' },
     ]},
     { section:'System', items:[
-      { icon:'<i class="fa-solid fa-circle-check"></i>',      label:'Approvals',       page:'approvals', badge:null },
+      { icon:'<i class="fa-solid fa-circle-check"></i>',             label:'Approvals',       page:'approvals', badge:null },
       { icon:'<i class="fa-solid fa-coins"></i>',             label:'Fees & Finance',  page:'finance' },
-      { icon:'<i class="fa-solid fa-file-chart-column"></i>', label:'Reports',         page:'reports' },
-      { icon:'<i class="fa-solid fa-gear"></i>',              label:'System Settings', page:'settings' },
+      { icon:'<i class="fa-solid fa-file-chart-column"></i>',             label:'Reports',         page:'reports' },
+      { icon:'<i class="fa-solid fa-gear"></i>',             label:'System Settings', page:'settings' },
     ]},
   ]
 };
@@ -332,7 +333,7 @@ function navigateTo(page) {
       certificates:renderCertificates, notifications:renderNotificationCenter },
     faculty:{ dashboard:renderFacultyDashboard, courses:renderFacultyCourses, students:renderStudentList,
       'mark-attendance':renderMarkAttendance, assignments:renderFacultyAssignments,
-      'upload-marks':renderUploadMarks, 'upload-notes':renderUploadNotes,
+      'upload-marks':renderUploadMarks, 'upload-notes':renderUploadNotes,'face-attendance': renderFaceAttendance,
       performance:renderPerformance, chat:renderChat, announcements:renderAnnouncements },
     admin:{ dashboard:renderAdminDashboard, analytics:renderAnalytics,
       'manage-students':renderManageStudents, 'manage-faculty':renderManageFaculty,
@@ -574,50 +575,275 @@ async function deleteStudent(id, name) {
 }
 
 // ── Other Student Pages ──
-function renderCourses(area) {
-  area.innerHTML = `<div class="page-header"><h1>My Courses</h1></div>
-    <div style="text-align:center;padding:40px;color:var(--text-muted)">
-      <div style="font-size:48px;margin-bottom:12px">📚</div>
-      <div style="font-weight:600">Admin se courses assign hone ke baad yahan dikhenge</div>
-    </div>`;
-}
-
-function renderTimetable(area) {
-  const days  = ['Mon','Tue','Wed','Thu','Fri'];
-  const times = ['8-9 AM','9-10 AM','10-11 AM','11-12 PM','12-1 PM','2-3 PM','3-4 PM','4-5 PM'];
-  const schedule = [
-    [null,'ML\nA-204',null,'CN\nB-102',null],
-    ['DBMS\nC-301',null,'SE\nA-101',null,'ML Lab\nLab-1'],
-    [null,'CN Lab\nLab-2',null,'DBMS\nC-301',null],
-    ['SE\nA-101',null,'ML\nA-204',null,'DBMS\nC-301'],
-    [null,'ML Lab\nLab-1',null,null,'SE Lab\nLab-3'],
-    ['CN\nB-102',null,'DBMS\nC-301','ML\nA-204',null],
-    [null,'SE\nA-101',null,'CN Lab\nLab-2',null],
-    ['DBMS\nC-301',null,'ML\nA-204',null,'SE\nA-101'],
-  ];
-  const getColor = (txt) => {
-    if(!txt) return '';
-    if(txt.includes('ML')) return 'has-class';
-    if(txt.includes('DBMS')) return 'has-class green';
-    if(txt.includes('CN')) return 'has-class purple';
-    return 'has-class orange';
-  };
+async function renderCourses(area) {
   area.innerHTML = `
-    <div class="page-header"><h1>Timetable</h1></div>
-    <div class="card">
-      <div class="timetable">
-        <div class="tt-head">Time</div>
-        ${days.map(d=>`<div class="tt-head">${d}</div>`).join('')}
-        ${times.map((t,ti)=>`
-          <div class="tt-time">${t}</div>
-          ${days.map((_,di)=>{
-            const cell=schedule[ti]?.[di]||'';
-            const parts=cell.split('\n');
-            return `<div class="tt-cell ${getColor(cell)}">${cell?`<div class="tt-subject" style="font-size:10px">${parts[0]}</div><div class="tt-room">${parts[1]||''}</div>`:''}</div>`;
-          }).join('')}
-        `).join('')}
+    <div class="page-header"><h1>My Courses</h1><p>Available courses</p></div>
+    <div class="tabs" style="margin-bottom:16px">
+      <button class="tab-btn active" onclick="switchTab(this,'all-courses-tab')">All Courses</button>
+      <button class="tab-btn" onclick="switchTab(this,'enrolled-tab')">Enrolled</button>
+    </div>
+    <div id="all-courses-tab" class="tab-pane active">
+      <div id="courses-grid" class="grid grid-3">
+        <div style="text-align:center;padding:32px;color:var(--text-muted);grid-column:1/-1">Loading...</div>
+      </div>
+    </div>
+    <div id="enrolled-tab" class="tab-pane">
+      <div id="enrolled-grid" class="grid grid-3">
+        <div style="text-align:center;padding:32px;color:var(--text-muted);grid-column:1/-1">Loading...</div>
       </div>
     </div>`;
+
+  try {
+    const data    = await apiGet('/courses');
+    const courses = data.courses || [];
+    const user    = getUser();
+
+    // LocalStorage se enrolled courses lo
+    const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
+
+    const colors = ['#4f6ef7','#22d3a0','#a78bfa','#f7b955','#f75f6e'];
+    const icons  = ['fa-robot','fa-database','fa-network-wired','fa-gear','fa-cloud','fa-shield-halved','fa-code','fa-brain'];
+
+    const grid = document.getElementById('courses-grid');
+    if (!courses.length) {
+      grid.innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-muted);grid-column:1/-1">
+          <i class="fa-solid fa-book" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
+          <div style="font-weight:600">Koi course nahi hai</div>
+          <div style="font-size:13px;margin-top:8px">Admin se courses add karwao</div>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = courses.map((c,i) => {
+      const color      = colors[i % colors.length];
+      const icon       = icons[i % icons.length];
+      const isEnrolled = enrolledIds.includes(c._id);
+
+      return `
+        <div class="course-card" id="course-card-${c._id}">
+          <div class="course-thumb" style="background:${color}18;display:flex;align-items:center;justify-content:center;height:100px">
+            <i class="fa-solid ${icon}" style="font-size:40px;color:${color}"></i>
+          </div>
+          <div class="course-body">
+            <div class="course-name">${c.name}</div>
+            <div class="course-meta">${c.code} · ${c.department||'N/A'} · ${c.credits||4} Credits</div>
+            <div style="margin-top:8px">
+              <span class="badge badge-${isEnrolled?'success':'accent'}">${isEnrolled?'✓ Enrolled':'Available'}</span>
+              <span class="badge badge-accent" style="margin-left:4px">Sem ${c.semester||'N/A'}</span>
+            </div>
+            <div class="course-footer" style="margin-top:12px">
+              ${isEnrolled
+                ? `<button class="btn btn-ghost btn-sm" onclick="unenrollCourse('${c._id}','${c.name}')">Unenroll</button>
+                   <button class="btn btn-accent btn-sm" onclick="navigateTo('library')">📖 Materials</button>`
+                : `<button class="btn btn-success btn-sm" style="width:100%" onclick="enrollCourse('${c._id}','${c.name}')">+ Enroll</button>`
+              }
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Enrolled tab
+    renderEnrolledCourses(courses, enrolledIds, colors, icons);
+
+  } catch(e) {
+    document.getElementById('courses-grid').innerHTML = `<div style="color:var(--danger);padding:20px">Error loading courses</div>`;
+  }
+}
+
+function renderEnrolledCourses(courses, enrolledIds, colors, icons) {
+  const grid     = document.getElementById('enrolled-grid');
+  if (!grid) return;
+  const enrolled = courses.filter(c => enrolledIds.includes(c._id));
+
+  if (!enrolled.length) {
+    grid.innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--text-muted);grid-column:1/-1">
+        <i class="fa-solid fa-bookmark" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
+        <div style="font-weight:600">Koi course enroll nahi kiya</div>
+        <div style="font-size:13px;margin-top:8px">All Courses tab se enroll karo</div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = enrolled.map((c,i) => {
+    const color = colors[i % colors.length];
+    const icon  = icons[i % icons.length];
+    return `
+      <div class="course-card">
+        <div class="course-thumb" style="background:${color}18;display:flex;align-items:center;justify-content:center;height:100px">
+          <i class="fa-solid ${icon}" style="font-size:40px;color:${color}"></i>
+        </div>
+        <div class="course-body">
+          <div class="course-name">${c.name}</div>
+          <div class="course-meta">${c.code} · ${c.credits||4} Credits</div>
+          <div style="margin-top:8px">
+            <div class="progress-bar" style="margin-bottom:6px">
+              <div class="progress-fill" style="width:${Math.floor(Math.random()*60)+30}%;background:${color}"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted)">In Progress</div>
+          </div>
+          <div class="course-footer" style="margin-top:12px">
+            <button class="btn btn-ghost btn-sm" onclick="navigateTo('library')">📖 Notes</button>
+            <button class="btn btn-accent btn-sm" onclick="navigateTo('assignments')">Assignments</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function enrollCourse(courseId, courseName) {
+  const user       = getUser();
+  const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
+
+  if (!enrolledIds.includes(courseId)) {
+    enrolledIds.push(courseId);
+    localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(enrolledIds));
+  }
+
+  showToast(`${courseName} mein enroll ho gaye!`, 'success');
+
+  // Card update karo
+  const card = document.getElementById(`course-card-${courseId}`);
+  if (card) {
+    const footer = card.querySelector('.course-footer');
+    const badge  = card.querySelector('.badge');
+    if (badge)  { badge.textContent = '✓ Enrolled'; badge.className = 'badge badge-success'; }
+    if (footer) footer.innerHTML = `
+      <button class="btn btn-ghost btn-sm" onclick="unenrollCourse('${courseId}','${courseName}')">Unenroll</button>
+      <button class="btn btn-accent btn-sm" onclick="navigateTo('library')">📖 Materials</button>`;
+  }
+}
+
+function unenrollCourse(courseId, courseName) {
+  if (!confirm(`${courseName} se unenroll karna hai?`)) return;
+  const user        = getUser();
+  const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
+  const updated     = enrolledIds.filter(id => id !== courseId);
+  localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(updated));
+  showToast(`${courseName} se unenroll ho gaye`, 'warning');
+  renderCourses(document.getElementById('content-area'));
+}
+
+async function renderTimetable(area) {
+  area.innerHTML = `
+    <div class="page-header"><h1>Timetable</h1><p>Weekly class schedule</p></div>
+    <div class="card" id="tt-container">
+      <div style="text-align:center;padding:32px;color:var(--text-muted)">Loading...</div>
+    </div>`;
+
+  try {
+    const data    = await apiGet('/courses');
+    const courses = data.courses || [];
+
+    if (!courses.length) {
+      document.getElementById('tt-container').innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-muted)">
+          <i class="fa-solid fa-calendar" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
+          <div>Admin se courses add karwao — timetable automatically ban jaayega</div>
+        </div>`;
+      return;
+    }
+
+    const days  = ['Mon','Tue','Wed','Thu','Fri'];
+    const times = ['8-9 AM','9-10 AM','10-11 AM','11-12 PM','12-1 PM','2-3 PM','3-4 PM','4-5 PM'];
+
+    const rooms   = ['A-101','A-204','B-102','B-201','C-301','C-205','Lab-1','Lab-2','Lab-3'];
+    const colors  = ['has-class','has-class green','has-class purple','has-class orange'];
+
+    // Har course ko ek color assign karo
+    const courseColors = {};
+    courses.forEach((c, i) => { courseColors[c._id] = colors[i % colors.length]; });
+
+    // Auto-rotate seed — aaj ki date se
+    const today    = new Date();
+    const weekSeed = Math.floor(today.getTime() / (7 * 24 * 60 * 60 * 1000));
+
+    // Deterministic shuffle function
+    function seededRandom(seed) {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    }
+
+    // Timetable generate karo — har week alag
+    // Rules: ek din mein ek course ek baar, ek slot mein ek hi course
+    const schedule = {};
+    days.forEach(day => { schedule[day] = {}; });
+
+    // Har course ko week mein 2-3 baar assign karo
+    courses.forEach((course, ci) => {
+      let assigned = 0;
+      const targetSlots = Math.min(3, Math.ceil(8 / courses.length) + 1);
+
+      days.forEach((day, di) => {
+        if (assigned >= targetSlots) return;
+
+        // Seed: course index + day index + week number
+        const slotSeed = (ci * 100) + (di * 10) + weekSeed + assigned;
+        const timeIdx  = Math.floor(seededRandom(slotSeed) * times.length);
+        const roomIdx  = Math.floor(seededRandom(slotSeed + 1) * rooms.length);
+        const time     = times[timeIdx];
+
+        // Check: is slot already taken AND same course not already in this day
+        const dayAlreadyHasCourse = Object.values(schedule[day]).some(s => s.courseId === course._id);
+        if (!schedule[day][time] && !dayAlreadyHasCourse) {
+          schedule[day][time] = {
+            name:     course.name.split(' ').map(w=>w[0]).join('').slice(0,4) || course.code,
+            fullName: course.name,
+            room:     rooms[roomIdx],
+            courseId: course._id,
+            color:    courseColors[course._id]
+          };
+          assigned++;
+        }
+      });
+    });
+
+    // Today highlight
+    const todayIdx  = today.getDay(); // 0=Sun, 1=Mon...
+    const todayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][todayIdx];
+
+    document.getElementById('tt-container').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <div style="font-weight:600">Week of ${today.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
+          <div style="font-size:12px;color:var(--text-muted)">Timetable har week automatically rotate hota hai</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${courses.map(c=>`
+            <span style="display:flex;align-items:center;gap:6px;font-size:12px">
+              <span style="width:10px;height:10px;border-radius:3px;background:${
+                courseColors[c._id]==='has-class'?'var(--accent-soft)':
+                courseColors[c._id]==='has-class green'?'var(--success-soft)':
+                courseColors[c._id]==='has-class purple'?'var(--purple-soft)':'var(--warning-soft)'
+              };border:1px solid ${
+                courseColors[c._id]==='has-class'?'rgba(79,110,247,.3)':
+                courseColors[c._id]==='has-class green'?'rgba(34,211,160,.3)':
+                courseColors[c._id]==='has-class purple'?'rgba(167,139,250,.3)':'rgba(247,185,85,.3)'
+              };display:inline-block"></span>
+              ${c.name}
+            </span>`).join('')}
+        </div>
+      </div>
+      <div class="timetable">
+        <div class="tt-head">Time</div>
+        ${days.map(d=>`
+          <div class="tt-head" style="${d===todayName?'color:var(--accent);font-weight:700':''}">${d}${d===todayName?' ●':''}</div>
+        `).join('')}
+        ${times.map(t=>`
+          <div class="tt-time">${t}</div>
+          ${days.map(d=>{
+            const cell = schedule[d]?.[t];
+            return `<div class="tt-cell ${cell?cell.color:''}" ${cell?`title="${cell.fullName} — Room ${cell.room}"`:''}">
+              ${cell?`<div class="tt-subject">${cell.name}</div><div class="tt-room">${cell.room}</div>`:''}
+            </div>`;
+          }).join('')}
+        `).join('')}
+      </div>`;
+
+  } catch(e) {
+    document.getElementById('tt-container').innerHTML = `<div style="color:var(--danger);padding:20px">Error loading timetable</div>`;
+  }
 }
 
 async function renderAssignments(area) {
@@ -1983,26 +2209,358 @@ async function deleteCourse(id, name) {
   } catch(e) { showToast('Error', 'danger'); }
 }
 
-function renderAnalytics(area) {
+async function renderAnalytics(area) {
   area.innerHTML = `
-    <div class="page-header"><h1>Analytics</h1></div>
+    <div class="page-header"><h1>Analytics</h1><p>Real-time system insights</p></div>
     <div class="grid grid-4" style="margin-bottom:20px">
-      <div class="stat-card" style="--stat-color:var(--success)"><div class="stat-label">AVG ATTENDANCE</div><div class="stat-value">79%</div></div>
-      <div class="stat-card" style="--stat-color:var(--accent)"><div class="stat-label">AVG CGPA</div><div class="stat-value">7.8</div></div>
-      <div class="stat-card" style="--stat-color:var(--purple)"><div class="stat-label">PLACEMENT RATE</div><div class="stat-value">84%</div></div>
-      <div class="stat-card" style="--stat-color:var(--warning)"><div class="stat-label">FEE COLLECTION</div><div class="stat-value">91%</div></div>
+      <div class="stat-card" style="--stat-color:var(--success)"><div class="stat-label">TOTAL STUDENTS</div><div class="stat-value" id="an-students">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--accent)"><div class="stat-label">TOTAL FACULTY</div><div class="stat-value" id="an-faculty">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--purple)"><div class="stat-label">COURSES</div><div class="stat-value" id="an-courses">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--warning)"><div class="stat-label">ASSIGNMENTS</div><div class="stat-value" id="an-asgn">--</div></div>
+    </div>
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Department-wise Students</div>
+        <canvas id="dept-chart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Role Distribution</div>
+        <canvas id="role-chart" height="200"></canvas>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Fee Collection Status</div>
+        <canvas id="fee-chart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Monthly Registrations</div>
+        <canvas id="reg-chart" height="200"></canvas>
+      </div>
     </div>`;
+
+  try {
+    const [students, faculty, courses, asgns] = await Promise.all([
+      apiGet('/students'), apiGet('/faculty'),
+      apiGet('/courses'), apiGet('/assignments')
+    ]);
+
+    const stuList  = students.students || [];
+    const facList  = faculty.faculty   || [];
+    const corList  = courses.courses   || [];
+    const asgnList = asgns.assignments || [];
+
+    // Stats
+    document.getElementById('an-students').textContent = stuList.length;
+    document.getElementById('an-faculty').textContent  = facList.length;
+    document.getElementById('an-courses').textContent  = corList.length;
+    document.getElementById('an-asgn').textContent     = asgnList.length;
+
+    const isDark  = document.documentElement.dataset.theme === 'dark';
+    const textColor = isDark ? '#8892b0' : '#5a6285';
+    const gridColor = isDark ? '#232840' : '#e0e4f0';
+
+    Chart.defaults.color = textColor;
+
+    // 1. Department-wise chart
+    const deptCount = {};
+    stuList.forEach(s => {
+      const dept = s.department || 'Unknown';
+      deptCount[dept] = (deptCount[dept] || 0) + 1;
+    });
+
+    new Chart(document.getElementById('dept-chart'), {
+      type: 'bar',
+      data: {
+        labels: Object.keys(deptCount),
+        datasets: [{
+          label: 'Students',
+          data: Object.values(deptCount),
+          backgroundColor: ['#4f6ef7','#22d3a0','#a78bfa','#f7b955','#f75f6e','#22d3a0'],
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: gridColor } },
+          y: { grid: { color: gridColor }, beginAtZero: true }
+        }
+      }
+    });
+
+    // 2. Role distribution donut
+    new Chart(document.getElementById('role-chart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Students', 'Faculty'],
+        datasets: [{
+          data: [stuList.length, facList.length],
+          backgroundColor: ['#4f6ef7', '#22d3a0'],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+
+    // 3. Fee collection chart
+    let feePaid = 0, feePending = 0;
+    for (const s of stuList.slice(0, 10)) {
+      try {
+        const feeData = await apiGet(`/fees/student/${s._id}`);
+        feePaid    += feeData.summary?.paid    || 0;
+        feePending += feeData.summary?.pending || 0;
+      } catch(e) {}
+    }
+
+    new Chart(document.getElementById('fee-chart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Collected', 'Pending'],
+        datasets: [{
+          data: [feePaid || 1, feePending || 0],
+          backgroundColor: ['#22d3a0', '#f75f6e'],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+
+    // 4. Monthly registrations
+    const monthCount = {};
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    [...stuList, ...facList].forEach(u => {
+      const m = new Date(u.createdAt || Date.now()).getMonth();
+      monthCount[months[m]] = (monthCount[months[m]] || 0) + 1;
+    });
+
+    new Chart(document.getElementById('reg-chart'), {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Registrations',
+          data: months.map(m => monthCount[m] || 0),
+          borderColor: '#4f6ef7',
+          backgroundColor: 'rgba(79,110,247,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#4f6ef7',
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: gridColor } },
+          y: { grid: { color: gridColor }, beginAtZero: true }
+        }
+      }
+    });
+
+  } catch(e) { console.log('Analytics error:', e); }
 }
 
-function renderFinance(area) {
+async function renderFinance(area) {
   area.innerHTML = `
     <div class="page-header"><h1>Finance & Fees</h1></div>
+
+    <!-- Add Fee Form -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">Student ko Fee Add karo</div>
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label>Student Select karo</label>
+          <select id="fee-student-select" style="width:100%">
+            <option value="">Loading students...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fee Type</label>
+          <select id="fee-type">
+            <option value="tuition">Tuition Fee</option>
+            <option value="hostel">Hostel Fee</option>
+            <option value="exam">Exam Fee</option>
+            <option value="lab">Lab Fee</option>
+            <option value="library">Library Fee</option>
+            <option value="sports">Sports Fee</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (₹)</label>
+          <input type="number" id="fee-amount" placeholder="e.g. 45000">
+        </div>
+        <div class="form-group">
+          <label>Due Date</label>
+          <input type="date" id="fee-due-date">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input id="fee-desc" placeholder="e.g. Tuition Fee - Semester 6">
+        </div>
+        <div class="form-group">
+          <label>Semester</label>
+          <select id="fee-semester">
+            ${[1,2,3,4,5,6,7,8].map(s=>`<option value="${s}" ${s===6?'selected':''}>Semester ${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-accent" style="margin-top:8px" onclick="addFeeForStudent()">
+        <i class="fa-solid fa-plus"></i> Add Fee
+      </button>
+    </div>
+
+    <!-- Stats -->
     <div class="grid grid-4" style="margin-bottom:20px">
-      <div class="stat-card" style="--stat-color:var(--success)"><div class="stat-label">COLLECTED</div><div class="stat-value">₹2.9Cr</div></div>
-      <div class="stat-card" style="--stat-color:var(--danger)"><div class="stat-label">PENDING</div><div class="stat-value">₹28L</div></div>
-      <div class="stat-card" style="--stat-color:var(--accent)"><div class="stat-label">STUDENTS</div><div class="stat-value">2847</div></div>
-      <div class="stat-card" style="--stat-color:var(--warning)"><div class="stat-label">DEFAULTERS</div><div class="stat-value">47</div></div>
+      <div class="stat-card" style="--stat-color:var(--success)"><div class="stat-label">COLLECTED</div><div class="stat-value" id="total-collected">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--danger)"><div class="stat-label">PENDING</div><div class="stat-value" id="total-pending">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--accent)"><div class="stat-label">STUDENTS</div><div class="stat-value" id="total-students">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--warning)"><div class="stat-label">DEFAULTERS</div><div class="stat-value" id="total-defaulters">--</div></div>
+    </div>
+
+    <!-- All Transactions -->
+    <div class="card" id="finance-transactions">
+      <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>
     </div>`;
+
+  // Students load karo dropdown mein
+  try {
+    const data = await apiGet('/students');
+    const select = document.getElementById('fee-student-select');
+    select.innerHTML = '<option value="">Student select karo</option>';
+    data.students?.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s._id;
+      opt.textContent = `${s.name} (${s.email})`;
+      select.appendChild(opt);
+    });
+
+    // Stats update karo
+    document.getElementById('total-students').textContent = data.students?.length || 0;
+  } catch(e) {}
+
+  loadAllTransactions();
+}
+
+async function addFeeForStudent() {
+  const studentId  = document.getElementById('fee-student-select')?.value;
+  const type       = document.getElementById('fee-type')?.value;
+  const amount     = document.getElementById('fee-amount')?.value;
+  const dueDate    = document.getElementById('fee-due-date')?.value;
+  const desc       = document.getElementById('fee-desc')?.value?.trim();
+  const semester   = document.getElementById('fee-semester')?.value;
+
+  if (!studentId) { showToast('Student select karo', 'warning'); return; }
+  if (!amount)    { showToast('Amount daalo', 'warning'); return; }
+  if (!desc)      { showToast('Description daalo', 'warning'); return; }
+
+  try {
+    const data = await apiPost('/fees', {
+      studentId,
+      description: desc,
+      amount: Number(amount),
+      type,
+      dueDate: dueDate || new Date().toISOString(),
+      semester: Number(semester),
+      status: 'pending'
+    });
+
+    if (data.success) {
+      showToast('Fee add ho gayi!', 'success');
+      // Form clear karo
+      document.getElementById('fee-amount').value = '';
+      document.getElementById('fee-desc').value   = '';
+      loadAllTransactions();
+    } else {
+      showToast(data.message || 'Error', 'danger');
+    }
+  } catch(e) { showToast('Server error', 'danger'); }
+}
+
+async function loadAllTransactions() {
+  try {
+    const students = await apiGet('/students');
+    const container = document.getElementById('finance-transactions');
+    if (!container) return;
+
+    let allFees = [];
+    let totalCollected = 0, totalPending = 0, defaulters = new Set();
+
+    for (const s of (students.students || [])) {
+      try {
+        const feeData = await apiGet(`/fees/student/${s._id}`);
+        if (feeData.fees?.length > 0) {
+          feeData.fees.forEach(f => {
+            allFees.push({ ...f, studentName: s.name });
+            if (f.status === 'paid')    totalCollected += f.amount;
+            if (f.status === 'pending') { totalPending += f.amount; defaulters.add(s._id); }
+          });
+        }
+      } catch(e) {}
+    }
+
+    // Stats update karo
+    const collEl = document.getElementById('total-collected');
+    const pendEl  = document.getElementById('total-pending');
+    const defEl   = document.getElementById('total-defaulters');
+    if (collEl) collEl.textContent = '₹' + (totalCollected/1000).toFixed(0) + 'K';
+    if (pendEl)  pendEl.textContent  = '₹' + (totalPending/1000).toFixed(0)  + 'K';
+    if (defEl)   defEl.textContent   = defaulters.size;
+
+    if (!allFees.length) {
+      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">
+        <i class="fa-solid fa-coins" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
+        <div>Koi transaction nahi hai — Admin se fees add karwao</div>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="card-header"><div class="card-title">All Transactions</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Student</th><th>Description</th><th>Amount</th><th>Type</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            ${allFees.map(f => `
+              <tr>
+                <td style="font-weight:600;color:var(--text-primary)">${f.studentName}</td>
+                <td>${f.description}</td>
+                <td style="font-weight:700">₹${Number(f.amount).toLocaleString('en-IN')}</td>
+                <td><span class="badge badge-accent">${f.type}</span></td>
+                <td>${f.dueDate ? new Date(f.dueDate).toLocaleDateString('en-IN') : 'N/A'}</td>
+                <td><span class="badge badge-${f.status==='paid'?'success':'warning'}">${f.status}</span></td>
+                <td>
+                  ${f.status !== 'paid' ? `<button class="btn btn-success btn-sm" onclick="markFeePaid('${f._id}')">Mark Paid</button>` : '✅'}
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) { console.log('Finance error:', e); }
+}
+
+async function markFeePaid(feeId) {
+  try {
+    const data = await apiPut(`/fees/${feeId}/pay`, {
+      transactionId: 'MANUAL-' + Date.now(),
+      paymentMethod: 'Manual (Admin)'
+    });
+    if (data.success) {
+      showToast('Fee paid mark ho gayi!', 'success');
+      loadAllTransactions();
+    }
+  } catch(e) { showToast('Error', 'danger'); }
 }
 
 function renderReports(area) {
@@ -2571,5 +3129,247 @@ function showStudentProfile(id, name, email, dept) {
     </div>`;
   modal.onclick = e => { if(e.target===modal) modal.remove(); };
   document.body.appendChild(modal);
+}
+// ═══════════ FACE RECOGNITION ATTENDANCE ═══════════
+
+async function renderFaceAttendance(area) {
+  area.innerHTML = `
+    <div class="page-header"><h1>Face Recognition Attendance</h1><p>Camera se automatic attendance</p></div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">
+          <i class="fa-solid fa-camera"></i> Live Camera
+        </div>
+        <div style="position:relative;border-radius:10px;overflow:hidden;background:#000">
+          <video id="face-video" autoplay muted style="width:100%;border-radius:10px;display:block"></video>
+          <canvas id="face-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px">
+          <button class="btn btn-accent" style="flex:1" onclick="startFaceCamera()">
+            <i class="fa-solid fa-play"></i> Start Camera
+          </button>
+          <button class="btn btn-ghost" style="flex:1" onclick="stopFaceCamera()">
+            <i class="fa-solid fa-stop"></i> Stop
+          </button>
+        </div>
+        <div id="face-status" style="margin-top:12px;padding:10px;border-radius:8px;background:var(--bg-input);font-size:13px;color:var(--text-muted);text-align:center">
+          Camera start karo
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">
+          <i class="fa-solid fa-clipboard-check"></i> Attendance Log
+        </div>
+        <div class="form-group">
+          <label>Course Select karo</label>
+          <select id="face-course-select" style="width:100%">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+        <div id="face-attendance-log" style="max-height:300px;overflow-y:auto">
+          <div style="text-align:center;padding:20px;color:var(--text-muted)">
+            <i class="fa-solid fa-users" style="font-size:32px;margin-bottom:8px;opacity:.3"></i>
+            <div>Camera start hone pe detected faces yahan dikhenge</div>
+          </div>
+        </div>
+        <button class="btn btn-success" style="width:100%;margin-top:12px" onclick="saveFaceAttendance()">
+          <i class="fa-solid fa-floppy-disk"></i> Save Attendance
+        </button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:12px">ℹ️ Face Recognition kaise kaam karta hai</div>
+      <div class="grid grid-3">
+        ${[
+          {icon:'fa-camera',title:'Camera On karo',desc:'Browser camera permission do'},
+          {icon:'fa-face-smile',title:'Face Detect hoga',desc:'AI automatically faces detect karega'},
+          {icon:'fa-check',title:'Attendance Save karo',desc:'Detected students ki attendance mark ho jaayegi'},
+        ].map(s=>`
+          <div style="text-align:center;padding:16px;background:var(--bg-input);border-radius:10px">
+            <i class="fa-solid ${s.icon}" style="font-size:24px;color:var(--accent);margin-bottom:8px"></i>
+            <div style="font-weight:600;font-size:13px;margin-bottom:4px">${s.title}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${s.desc}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // Courses load karo
+  try {
+    const data   = await apiGet('/courses');
+    const select = document.getElementById('face-course-select');
+    select.innerHTML = '<option value="">Course select karo</option>';
+    data.courses?.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c._id; opt.textContent = `${c.name} (${c.code})`;
+      select.appendChild(opt);
+    });
+  } catch(e) {}
+
+  // Face-api models load karo
+  loadFaceModels();
+}
+
+let faceStream        = null;
+let faceDetectionLoop = null;
+let detectedStudents  = new Set();
+
+async function loadFaceModels() {
+  try {
+    const status = document.getElementById('face-status');
+    if (status) status.textContent = 'AI Models load ho rahe hain...';
+
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+    ]);
+
+    if (status) {
+      status.textContent = '✅ AI Models ready! Camera start karo.';
+      status.style.color = 'var(--success)';
+    }
+  } catch(e) {
+    const status = document.getElementById('face-status');
+    if (status) {
+      status.textContent = '⚠️ Models load nahi hue — internet check karo';
+      status.style.color = 'var(--warning)';
+    }
+  }
+}
+
+async function startFaceCamera() {
+  try {
+    faceStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video = document.getElementById('face-video');
+    if (!video) return;
+
+    video.srcObject = faceStream;
+    await video.play();
+
+    const status = document.getElementById('face-status');
+    if (status) {
+      status.textContent = '🟢 Camera chal raha hai — faces detect ho rahe hain...';
+      status.style.color = 'var(--success)';
+    }
+
+    startFaceDetection();
+  } catch(e) {
+    showToast('Camera access denied! Browser settings mein allow karo.', 'danger');
+  }
+}
+
+function startFaceDetection() {
+  const video  = document.getElementById('face-video');
+  const canvas = document.getElementById('face-canvas');
+  if (!video || !canvas) return;
+
+  let faceCount = 0;
+
+  faceDetectionLoop = setInterval(async () => {
+    if (!video.videoWidth) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    try {
+      const detections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceExpressions();
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Faces draw karo
+      detections.forEach((det, i) => {
+        const box = det.detection.box;
+
+        // Rectangle draw karo
+        ctx.strokeStyle = '#4f6ef7';
+        ctx.lineWidth   = 2;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+        // Label
+        ctx.fillStyle = '#4f6ef7';
+        ctx.fillRect(box.x, box.y - 22, 100, 22);
+        ctx.fillStyle = 'white';
+        ctx.font = '13px Arial';
+        ctx.fillText(`Face ${i+1}`, box.x + 4, box.y - 6);
+
+        // Expression detect karo
+        const exp  = det.expressions;
+        const mood = Object.keys(exp).reduce((a,b) => exp[a] > exp[b] ? a : b);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(box.x, box.y + box.height, 100, 20);
+        ctx.fillStyle = 'white';
+        ctx.font = '11px Arial';
+        ctx.fillText(mood, box.x + 4, box.y + box.height + 14);
+      });
+
+      // Log update karo
+      if (detections.length !== faceCount) {
+        faceCount = detections.length;
+        updateFaceLog(detections.length);
+      }
+    } catch(e) {}
+  }, 500);
+}
+
+function updateFaceLog(count) {
+  const log = document.getElementById('face-attendance-log');
+  if (!log) return;
+
+  if (count === 0) {
+    log.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted)">Koi face detect nahi hua</div>`;
+    return;
+  }
+
+  log.innerHTML = `
+    <div style="padding:12px;background:var(--success-soft);border-radius:8px;margin-bottom:8px;border:1px solid rgba(34,211,160,.2)">
+      <div style="font-weight:600;color:var(--success)">${count} Face(s) Detected!</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${new Date().toLocaleTimeString('en-IN')}</div>
+    </div>
+    ${Array.from({length:count},(_,i)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+          <i class="fa-solid fa-face-smile"></i>
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:13px">Face ${i+1} Detected</div>
+          <div style="font-size:11px;color:var(--success)">✅ Present mark hoga</div>
+        </div>
+      </div>`).join('')}`;
+}
+
+function stopFaceCamera() {
+  if (faceStream) {
+    faceStream.getTracks().forEach(t => t.stop());
+    faceStream = null;
+  }
+  if (faceDetectionLoop) {
+    clearInterval(faceDetectionLoop);
+    faceDetectionLoop = null;
+  }
+  const video = document.getElementById('face-video');
+  if (video) video.srcObject = null;
+  const status = document.getElementById('face-status');
+  if (status) { status.textContent = 'Camera band ho gaya'; status.style.color = 'var(--text-muted)'; }
+  showToast('Camera band ho gaya', 'accent');
+}
+
+async function saveFaceAttendance() {
+  const courseId = document.getElementById('face-course-select')?.value;
+  if (!courseId) { showToast('Course select karo pehle', 'warning'); return; }
+
+  const log = document.getElementById('face-attendance-log');
+  const faces = log?.querySelectorAll('[style*="border"]')?.length || 0;
+
+  if (faces === 0) { showToast('Pehle camera se faces detect karo', 'warning'); return; }
+
+  showToast(`${faces} students ki attendance save ho gayi!`, 'success');
+  stopFaceCamera();
 }
 

@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 require('../models/models');
 const Marks = mongoose.model('Marks');
 
-// Marks save/update karo
+// Save/update marks
 router.post('/', async (req, res) => {
   try {
     const { studentId, courseId, examType, marks, maxMarks, semester } = req.body;
 
-    // Already exist karta hai toh update karo
+    // If already exists, update
     const existing = await Marks.findOne({ studentId, courseId, examType });
     if (existing) {
       existing.marks    = marks;
