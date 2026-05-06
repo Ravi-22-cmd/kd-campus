@@ -1,9 +1,11 @@
 const express  = require('express');
 const router   = express.Router();
-const jwt      = require('jsonwebtoken');
+
 const { User, Course } = require('../models/models');
 
-const JWT_SECRET = 'universe_super_secret_key_2026';
+// JWT secret should come from environment variables (server.js / auth middleware).
+// Kept intentionally empty here to avoid hard-coded secrets.
+
 
 router.get('/faces', async (req, res) => {
   try {
