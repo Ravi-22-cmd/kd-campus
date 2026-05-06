@@ -5,13 +5,16 @@ const API = 'http://localhost:3000/api';
 
 const apiGet = async (url) => {
   const token = localStorage.getItem('token');
-  const res   = await fetch(`${API}${url}`, { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await fetch(`${API}${url}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
   return res.json();
 };
 
+
 const apiPost = async (url, body) => {
   const token = localStorage.getItem('token');
-  console.log('Token:', token); // ← debug ke liye
+
   const res = await fetch(`${API}${url}`, {
     method: 'POST',
     headers: {
@@ -25,6 +28,7 @@ const apiPost = async (url, body) => {
 
 const apiPut = async (url, body) => {
   const token = localStorage.getItem('token');
+
   const res   = await fetch(`${API}${url}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -60,6 +64,7 @@ const navConfig = {
       { icon:'<i class="fa-solid fa-file-pen"></i>',         label:'Assignments',     page:'assignments', badge:null },
       { icon:'<i class="fa-solid fa-chart-bar"></i>',        label:'Results & Marks', page:'results' },
       { icon:'<i class="fa-solid fa-clipboard-check"></i>',  label:'Attendance',      page:'attendance' },
+      { icon:'<i class="fa-solid fa-face-smile"></i>',       label:'Register Face',   page:'register-face' },
       { icon:'<i class="fa-solid fa-building-columns"></i>', label:'Digital Library', page:'library' },
       { icon:'<i class="fa-solid fa-pencil"></i>',           label:'Online Exams',    page:'exams' },
     ]},
@@ -67,6 +72,7 @@ const navConfig = {
       { icon:'<i class="fa-solid fa-indian-rupee-sign"></i>',label:'Fee Payment',      page:'fees' },
       { icon:'<i class="fa-solid fa-comments"></i>',          label:'Chat',             page:'chat', badge:null },
       { icon:'<i class="fa-solid fa-bell"></i>',              label:'Notifications',    page:'notifications', badge:null },
+      { icon:'<i class="fa-solid fa-bullhorn"></i>',          label:'Announcements',    page:'announcements' },
       { icon:'<i class="fa-solid fa-bus"></i>',               label:'Bus Tracker',      page:'bus' },
       { icon:'<i class="fa-solid fa-map-location-dot"></i>',  label:'Campus Map',       page:'campus' },
       { icon:'<i class="fa-solid fa-briefcase"></i>',         label:'Placement Portal', page:'placement' },
@@ -111,6 +117,118 @@ const navConfig = {
     ]},
   ]
 };
+// Top bar mein profile click pe
+document.getElementById('top-avatar')?.addEventListener('click', showProfile);
+
+function showProfile() {
+  const user = getUser();
+  const initials = user.name?.split(' ').map(n=>n[0]).join('').toUpperCase() || 'U';
+
+  const modal = document.createElement('div');
+  modal.id = 'profile-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:16px;padding:28px;max-width:440px;width:90%;border:1px solid var(--border);max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">My Profile</h3>
+        <button onclick="document.getElementById('profile-modal').remove()" style="background:none;font-size:20px;color:var(--text-muted)">×</button>
+      </div>
+
+      <!-- Avatar -->
+      <div style="text-align:center;margin-bottom:20px">
+        <div class="user-avatar" style="width:72px;height:72px;font-size:24px;margin:0 auto 12px">${initials}</div>
+        <div style="font-weight:700;font-size:16px">${user.name}</div>
+        <div style="font-size:13px;color:var(--text-muted)">${user.email}</div>
+        <span class="badge badge-accent" style="margin-top:6px">${user.role}</span>
+      </div>
+
+      <!-- Edit Form -->
+      <div class="tabs" style="margin-bottom:16px">
+        <button class="tab-btn active" onclick="switchProfileTab(this,'info-tab')">Info</button>
+        <button class="tab-btn" onclick="switchProfileTab(this,'password-tab')">Password</button>
+      </div>
+
+      <div id="info-tab">
+        <div class="form-group"><label>Full Name</label><input id="p-name" value="${user.name||''}"></div>
+        <div class="form-group"><label>Phone</label><input id="p-phone" value="${user.phone||''}" placeholder="+91 98765 43210"></div>
+        <div class="form-group"><label>Department</label>
+          <select id="p-dept">
+            ${['Computer Science','Electronics','Mechanical','Civil','Management','Physics','Mathematics'].map(d=>`<option ${user.department===d?'selected':''}>${d}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>Email</label><input value="${user.email||''}" disabled style="opacity:.6"></div>
+        <button class="btn btn-accent" style="width:100%" onclick="updateProfile('${user.id}')">
+          <i class="fa-solid fa-floppy-disk"></i> Save Changes
+        </button>
+      </div>
+
+      <div id="password-tab" style="display:none">
+        <div class="form-group"><label>Current Password</label><input type="password" id="p-curr-pass" placeholder="Current password"></div>
+        <div class="form-group"><label>New Password</label><input type="password" id="p-new-pass" placeholder="New password"></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" id="p-conf-pass" placeholder="Confirm new password"></div>
+        <button class="btn btn-accent" style="width:100%" onclick="changePassword('${user.id}')">
+          <i class="fa-solid fa-lock"></i> Change Password
+        </button>
+      </div>
+    </div>`;
+
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function switchProfileTab(btn, tabId) {
+  document.querySelectorAll('#profile-modal .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('info-tab').style.display    = tabId==='info-tab'    ? 'block' : 'none';
+  document.getElementById('password-tab').style.display = tabId==='password-tab' ? 'block' : 'none';
+}
+
+async function updateProfile(userId) {
+  const name  = document.getElementById('p-name')?.value?.trim();
+  const phone = document.getElementById('p-phone')?.value?.trim();
+  const dept  = document.getElementById('p-dept')?.value;
+
+  if (!name) { showToast('Name bharo','warning'); return; }
+
+  try {
+    const data = await apiPut(`/profile/${userId}`, { name, phone, department: dept });
+    if (data.success) {
+      // Update LocalStorage
+      const userData = JSON.parse(localStorage.getItem('userData')||'{}');
+      userData.name       = name;
+      userData.phone      = phone;
+      userData.department = dept;
+      localStorage.setItem('userData', JSON.stringify(userData));
+
+      // Update sidebar
+      const initials = name.split(' ').map(n=>n[0]).join('').toUpperCase();
+      document.getElementById('sidebar-name').textContent   = name;
+      document.getElementById('sidebar-avatar').textContent = initials;
+      document.getElementById('top-avatar').textContent     = initials;
+
+      showToast('Profile updated successfully!','success');
+      document.getElementById('profile-modal')?.remove();
+    } else showToast(data.message||'Error','danger');
+  } catch(e) { showToast('Server error','danger'); }
+}
+
+async function changePassword(userId) {
+  const curr = document.getElementById('p-curr-pass')?.value;
+  const newP = document.getElementById('p-new-pass')?.value;
+  const conf = document.getElementById('p-conf-pass')?.value;
+
+  if (!curr||!newP) { showToast('Sab fields bharo','warning'); return; }
+  if (newP !== conf) { showToast('New password does not match','danger'); return; }
+  if (newP.length < 6) { showToast('Password must be at least 6 characters','warning'); return; }
+
+  try {
+    const data = await apiPut(`/profile/${userId}`, { currentPassword: curr, newPassword: newP });
+    if (data.success) {
+      showToast('Password changed successfully! Please login again.','success');
+      setTimeout(() => logout(), 2000);
+    } else showToast(data.message||'Error','danger');
+  } catch(e) { showToast('Server error','danger'); }
+}
 
 // ── Auth ──
 document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -138,10 +256,65 @@ document.querySelectorAll('#signup-form .role-btn').forEach(btn => {
 });
 
 function sendOTP() {
-  const phone = document.getElementById('login-phone').value;
-  if (!phone) { showToast('Phone number daalo','warning'); return; }
-  showToast('OTP sent!','success');
-  document.getElementById('otp-input').style.display = 'block';
+  // For OTP login we use email-based OTP (free via nodemailer)
+  const emailInput = document.getElementById('login-email');
+  const email = emailInput?.value?.trim();
+  if (!email) { showToast('Email daalo','warning'); return; }
+  const role = currentRole || document.querySelector('#login-form .role-btn.active')?.dataset?.role || 'student';
+
+  // call backend to send OTP
+  apiPost('/auth/otp/send', { email, role })
+    .then(data => {
+      if (data.success) {
+        showToast(data.message || 'OTP sent!','success');
+        document.getElementById('otp-input').style.display = 'block';
+        document.getElementById('otp-input')?.focus?.();
+      } else {
+        showToast(data.message || 'OTP send failed','danger');
+      }
+    })
+    .catch(() => showToast('Server error while sending OTP','danger'));
+}
+
+
+async function handleOTPLogin() {
+  const email = document.getElementById('login-email')?.value?.trim();
+  const otp   = document.getElementById('otp-input')?.value?.trim();
+  if (!email) { showToast('Email daalo','warning'); return; }
+  if (!otp)   { showToast('OTP daalo','warning'); return; }
+
+  const btn = document.querySelector('#login-form .btn-primary');
+  if (btn) { btn.textContent='Verifying OTP...'; btn.disabled=true; }
+
+  const role = currentRole || document.querySelector('#login-form .role-btn.active')?.dataset?.role || 'student';
+
+  try {
+    const data = await apiPost('/auth/otp/verify', { email, otp, role });
+    if (!data.success) {
+      showToast(data.message || 'OTP verify failed','danger');
+      if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
+      return;
+    }
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('userData', JSON.stringify(data.user));
+
+    currentRole = data.user.role;
+    currentUser = {
+      name: data.user.name,
+      initials: data.user.name.split(' ').map(n=>n[0]).join('').toUpperCase(),
+      role: `${data.user.role.charAt(0).toUpperCase()+data.user.role.slice(1)} · ${getUser().department||'KD Campus'}`,
+      id: data.user.id,
+    };
+
+    showToast(`Welcome ${data.user.name}! 🎉`,'success');
+    initApp(currentRole);
+  } catch (err) {
+    console.log('OTP verify error:', err);
+    showToast('Server error while verifying OTP','danger');
+  } finally {
+    if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
+  }
 }
 
 async function handleLogin() {
@@ -157,7 +330,11 @@ async function handleLogin() {
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password})
     });
     const data = await res.json();
-    if (!data.success) { showToast(data.message||'Login failed','danger'); btn.textContent='Sign In →'; btn.disabled=false; return; }
+    if (!data.success) {
+      showToast(data.message || 'Login failed','error');
+      btn.textContent='Sign In →'; btn.disabled=false;
+      return;
+    }
 
     localStorage.setItem('token', data.token);
     localStorage.setItem('userData', JSON.stringify(data.user));
@@ -171,8 +348,113 @@ async function handleLogin() {
     showToast(`Welcome ${data.user.name}! 🎉`,'success');
     initApp(currentRole);
   } catch(err) {
-    showToast('Server se connect nahi ho pa raha!','danger');
+    console.log('Network error:', err);
+    showToast('Server/network error. Please try again.', 'danger');
     btn.textContent='Sign In →'; btn.disabled=false;
+  }
+
+}
+
+function openForgotPassword(event) {
+  event.preventDefault();
+  const existing = document.getElementById('forgot-password-modal');
+  if (existing) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'forgot-password-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:18px;padding:28px;width:100%;max-width:420px;border:1px solid var(--border);box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <div style="font-size:18px;font-weight:700">Forgot Password</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Enter your account email and we will send a reset token.</div>
+        </div>
+        <button style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer" onclick="closeForgotPassword()">×</button>
+      </div>
+      <div class="form-group"><label>Email Address</label><input id="forgot-email" type="email" placeholder="you@university.edu"></div>
+      <button class="btn btn-accent" style="width:100%;margin-top:10px" onclick="submitForgotPassword()">Send Reset Token</button>
+      <div style="margin-top:14px;font-size:12px;color:var(--text-muted)">A code will be delivered to your email if the account exists.</div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) closeForgotPassword(); });
+  document.body.appendChild(modal);
+}
+
+function closeForgotPassword() {
+  document.getElementById('forgot-password-modal')?.remove();
+}
+
+function openResetPassword(token = '') {
+  const existing = document.getElementById('reset-password-modal');
+  if (existing) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'reset-password-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--bg-card);border-radius:18px;padding:28px;width:100%;max-width:420px;border:1px solid var(--border);box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <div style="font-size:18px;font-weight:700">Reset Password</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">Enter your email, reset token, and new password.</div>
+        </div>
+        <button style="background:none;border:none;color:var(--text-secondary);font-size:22px;cursor:pointer" onclick="closeResetPassword()">×</button>
+      </div>
+      <div class="form-group"><label>Email Address</label><input id="reset-email" type="email" placeholder="you@university.edu"></div>
+      <div class="form-group"><label>Reset Token</label><input id="reset-token" value="${token}" placeholder="Enter reset token"></div>
+      <div class="form-group"><label>New Password</label><input id="reset-password" type="password" placeholder="New password"></div>
+      <div class="form-group"><label>Confirm Password</label><input id="reset-password-confirm" type="password" placeholder="Confirm new password"></div>
+      <button class="btn btn-accent" style="width:100%;margin-top:10px" onclick="submitResetPassword()">Reset Password</button>
+      <div style="margin-top:14px;font-size:12px;color:var(--text-muted)">Token valid for one hour. Use the code from your email.</div>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) closeResetPassword(); });
+  document.body.appendChild(modal);
+}
+
+function closeResetPassword() {
+  document.getElementById('reset-password-modal')?.remove();
+}
+
+async function submitForgotPassword() {
+  const email = document.getElementById('forgot-email')?.value.trim();
+  if (!email) { showToast('Email daalo','warning'); return; }
+
+  try {
+    const data = await apiPost('/auth/forgot', { email });
+    if (data.success) {
+      showToast(data.message || 'Password reset token bhej diya gaya','success');
+      closeForgotPassword();
+      if (data.token) {
+        openResetPassword(data.token);
+      }
+    } else {
+      showToast(data.message || 'Reset failed','danger');
+    }
+  } catch (err) {
+    showToast('Cannot connect to server','danger');
+  }
+}
+
+async function submitResetPassword() {
+  const email = document.getElementById('reset-email')?.value.trim();
+  const token = document.getElementById('reset-token')?.value.trim();
+  const password = document.getElementById('reset-password')?.value;
+  const confirmPassword = document.getElementById('reset-password-confirm')?.value;
+
+  if (!email || !token || !password || !confirmPassword) { showToast('Saare fields bharo','warning'); return; }
+  if (password !== confirmPassword) { showToast('Password does not match','danger'); return; }
+  if (password.length < 6) { showToast('Password must be at least 6 characters','warning'); return; }
+
+  try {
+    const data = await apiPost('/auth/reset', { email, token, newPassword: password });
+    if (data.success) {
+      showToast(data.message || 'Password reset successful','success');
+      closeResetPassword();
+    } else {
+      showToast(data.message || 'Reset failed','danger');
+    }
+  } catch (err) {
+    showToast('Cannot connect to server','danger');
   }
 }
 
@@ -194,7 +476,7 @@ async function handleSignup() {
     });
     const data = await res.json();
     if (!data.success) { showToast(data.message||'Registration failed','danger'); return; }
-    showToast('Registration ho gayi! Admin approval ka wait karo.','success');
+    showToast('Registration successful! Waiting for admin approval.','success');
     document.querySelector('[data-tab="login"]').click();
   } catch(err) { showToast('Server error!','danger'); }
 }
@@ -206,21 +488,21 @@ function logout() {
   currentPage = 'dashboard';
   currentRole = 'student';
 
-  // Button reset karo
+  // Reset button
   const btn = document.querySelector('#login-form .btn-primary');
   if (btn) { btn.textContent = 'Sign In →'; btn.disabled = false; }
 
-  // Email/password clear karo
+  // Clear email/password
   const emailInput = document.getElementById('login-email');
   const passInput  = document.getElementById('login-password');
   if (emailInput) emailInput.value = '';
   if (passInput)  passInput.value  = '';
 
-  // App hide karo, auth show karo
+  // Hide app, show auth
   document.getElementById('app').classList.remove('active');
   document.getElementById('auth-screen').classList.add('active');
 
-  showToast('Logout ho gaye!', 'accent');
+  showToast('Logged out!', 'accent');
 }
 
 // ── App Init ──
@@ -247,11 +529,7 @@ function initApp(role) {
   navigateTo('dashboard');
   startAutoNotifications();
   if (role === 'admin') updateApprovalBadge();
-
-  renderNav(role);
-  navigateTo('dashboard');
-  startAutoNotifications();
-  if (role === 'admin') updateApprovalBadge();
+  updateNotificationBadgeOnLoad();
   initSocket();
 }
 
@@ -312,7 +590,7 @@ function navigateTo(page) {
   const titles = {
     dashboard:'Dashboard',courses:'My Courses',timetable:'Timetable',
     assignments:'Assignments',results:'Results & Marks',attendance:'Attendance',
-    library:'Digital Library',exams:'Online Exams',fees:'Fee Payment',
+    'register-face':'Register Face',library:'Digital Library',exams:'Online Exams',fees:'Fee Payment',
     chat:'Chat',bus:'Bus Tracker',campus:'Campus Map',
     placement:'Placement Portal',certificates:'Certificates',notifications:'Notifications',
     students:'Students','mark-attendance':'Mark Attendance',
@@ -328,9 +606,9 @@ function navigateTo(page) {
   const renderer = {
     student:{ dashboard:renderStudentDashboard, courses:renderCourses, timetable:renderTimetable,
       assignments:renderAssignments, results:renderResults, attendance:renderAttendancePage,
-      library:renderLibrary, exams:renderExams, fees:renderFees, chat:renderChat,
+      'register-face':renderRegisterFace, library:renderLibrary, exams:renderExams, fees:renderFees, chat:renderChat,
       bus:renderBusTracker, campus:renderCampusMap, placement:renderPlacement,
-      certificates:renderCertificates, notifications:renderNotificationCenter },
+      certificates:renderCertificates, notifications:renderNotificationCenter, announcements:renderStudentAnnouncements },
     faculty:{ dashboard:renderFacultyDashboard, courses:renderFacultyCourses, students:renderStudentList,
       'mark-attendance':renderMarkAttendance, assignments:renderFacultyAssignments,
       'upload-marks':renderUploadMarks, 'upload-notes':renderUploadNotes,'face-attendance': renderFaceAttendance,
@@ -338,8 +616,10 @@ function navigateTo(page) {
     admin:{ dashboard:renderAdminDashboard, analytics:renderAnalytics,
       'manage-students':renderManageStudents, 'manage-faculty':renderManageFaculty,
       'manage-courses':renderManageCourses, approvals:renderApprovals,
+      departments:renderDepartments,
       finance:renderFinance, reports:renderReports, settings:renderSettings }
   };
+
 
   const fn   = renderer[currentRole]?.[page];
   const area = document.getElementById('content-area');
@@ -352,23 +632,59 @@ function navigateTo(page) {
 
 async function renderStudentDashboard(area) {
   const user = getUser();
+  
   area.innerHTML = `
     <div class="page-header">
       <h1>Good Morning, ${user.name?.split(' ')[0]||'Student'}! 👋</h1>
       <p>${new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
     </div>
+
     <div id="dash-stats" class="grid grid-4" style="margin-bottom:20px">
-      <div class="stat-card" style="--stat-color:var(--accent)"><div class="stat-icon"><i class="fa-solid fa-chart-bar"></i></div><div class="stat-label">CGPA</div><div class="stat-value">--</div></div>
-      <div class="stat-card" style="--stat-color:var(--success)"><div class="stat-icon"><i class="fa-solid fa-clipboard-check"></i></div><div class="stat-label">ATTENDANCE</div><div class="stat-value">--</div></div>
-      <div class="stat-card" style="--stat-color:var(--warning)"><div class="stat-icon"><i class="fa-solid fa-file-pen"></i></div><div class="stat-label">ASSIGNMENTS</div><div class="stat-value">--</div></div>
-      <div class="stat-card" style="--stat-color:var(--danger)"><div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div><div class="stat-label">FEE DUE</div><div class="stat-value">--</div></div>
+      <div class="stat-card" style="--stat-color:var(--accent)">
+        <div class="stat-icon"><i class="fa-solid fa-chart-bar"></i></div>
+        <div class="stat-label">CGPA</div>
+        <div class="stat-value">--</div>
+      </div>
+
+      <div class="stat-card" style="--stat-color:var(--success)">
+        <div class="stat-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+        <div class="stat-label">ATTENDANCE</div>
+        <div class="stat-value">--</div>
+      </div>
+
+      <div class="stat-card" style="--stat-color:var(--warning)">
+        <div class="stat-icon"><i class="fa-solid fa-file-pen"></i></div>
+        <div class="stat-label">ASSIGNMENTS</div>
+        <div class="stat-value">--</div>
+      </div>
+
+      <div class="stat-card" style="--stat-color:var(--danger)">
+        <div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+        <div class="stat-label">FEE DUE</div>
+        <div class="stat-value">--</div>
+      </div>
     </div>
+
     <div class="grid grid-2" style="margin-bottom:20px">
-      <div class="card" id="dash-attendance"><div class="card-header"><div class="card-title">Attendance</div></div><div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div></div>
-      <div class="card" id="dash-marks"><div class="card-header"><div class="card-title">Performance</div></div><div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div></div>
+      <div class="card" id="dash-attendance">
+        <div class="card-header">
+          <div class="card-title">Attendance</div>
+        </div>
+        <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>
+      </div>
+
+      <div class="card" id="dash-marks">
+        <div class="card-header">
+          <div class="card-title">Performance</div>
+        </div>
+        <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>
+      </div>
     </div>
+
     <div class="card">
-      <div class="card-header"><div class="card-title">Quick Actions</div></div>
+      <div class="card-header">
+        <div class="card-title">Quick Actions</div>
+      </div>
       <div class="grid grid-4">
         ${[
           {icon:'<i class="fa-solid fa-file-pen"></i>',    label:'Assignments', action:'assignments'},
@@ -380,59 +696,111 @@ async function renderStudentDashboard(area) {
           {icon:'<i class="fa-solid fa-briefcase"></i>',   label:'Placement',   action:'placement'},
           {icon:'<i class="fa-solid fa-award"></i>',       label:'Certificates',action:'certificates'},
         ].map(q=>`
-          <div onclick="navigateTo('${q.action}')" style="padding:16px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;transition:all var(--transition)"
+          <div onclick="navigateTo('${q.action}')"
+            style="padding:16px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;transition:all var(--transition)"
             onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-soft)'"
             onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
             <div style="font-size:20px;margin-bottom:8px;color:var(--accent)">${q.icon}</div>
             <div style="font-size:12px;font-weight:600;color:var(--text-secondary)">${q.label}</div>
           </div>`).join('')}
       </div>
-    </div>`;
+    </div>
+  `;
 
   try {
     const userId = user.id;
 
+    // ✅ Attendance
     const attData = await apiGet(`/attendance/student/${userId}`);
     const attDiv  = document.getElementById('dash-attendance');
-    if (attData.attendance?.length>0) {
-      const overall = Math.round(attData.attendance.reduce((s,a)=>s+a.pct,0)/attData.attendance.length);
-      document.querySelector('#dash-stats .stat-card:nth-child(2) .stat-value').textContent = overall+'%';
-      attDiv.innerHTML = `<div class="card-header"><div class="card-title">Attendance</div><button class="btn btn-ghost btn-sm" onclick="navigateTo('attendance')">View All</button></div>
+
+    if (attData.attendance?.length > 0) {
+      const overall = Math.round(
+        attData.attendance.reduce((s,a)=>s+a.pct,0) / attData.attendance.length
+      );
+
+      document.querySelector('#dash-stats .stat-card:nth-child(2) .stat-value')
+        .textContent = overall + '%';
+
+      attDiv.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Attendance</div>
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('attendance')">View All</button>
+        </div>
         ${attData.attendance.map(a=>`
           <div class="marks-bar-row">
             <div class="marks-subject">${a.subject.split(' ')[0]}</div>
-            <div class="marks-bar-wrap"><div class="marks-bar-fill" style="width:${a.pct}%;background:${a.pct>=75?'var(--success)':a.pct>=65?'var(--warning)':'var(--danger)'}"></div></div>
+            <div class="marks-bar-wrap">
+              <div class="marks-bar-fill"
+                style="width:${a.pct}%;
+                background:${a.pct>=75?'var(--success)':a.pct>=65?'var(--warning)':'var(--danger)'}">
+              </div>
+            </div>
             <div class="marks-val">${a.pct}%</div>
-          </div>`).join('')}`;
+          </div>`).join('')}
+      `;
     } else {
-      attDiv.innerHTML = `<div class="card-header"><div class="card-title">Attendance</div></div><div style="text-align:center;padding:20px;color:var(--text-muted)">Koi record nahi</div>`;
+      attDiv.innerHTML = `<div style="text-align:center;padding:20px">No records</div>`;
     }
 
+    // ✅ Marks + CGPA
     const marksData = await apiGet(`/marks/student/${userId}`);
     const marksDiv  = document.getElementById('dash-marks');
-    if (marksData.marks?.length>0) {
-      marksDiv.innerHTML = `<div class="card-header"><div class="card-title">Performance</div><button class="btn btn-ghost btn-sm" onclick="navigateTo('results')">Details</button></div>
+
+    if (marksData.marks?.length > 0) {
+
+      // 🔥 CGPA Calculation
+      const totalPct = marksData.marks.reduce(
+        (sum, m) => sum + (m.marks / m.maxMarks) * 100, 0
+      );
+
+      const avgPct = totalPct / marksData.marks.length;
+      const cgpa   = ((avgPct / 100) * 10).toFixed(1);
+
+      document.querySelector('#dash-stats .stat-card:nth-child(1) .stat-value')
+        .textContent = cgpa;
+
+      // UI
+      marksDiv.innerHTML = `
+        <div class="card-header">
+          <div class="card-title">Performance</div>
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('results')">Details</button>
+        </div>
         ${marksData.marks.map(m=>`
           <div class="marks-bar-row">
             <div class="marks-subject">${m.courseId?.name?.split(' ')[0]||'Subject'}</div>
-            <div class="marks-bar-wrap"><div class="marks-bar-fill" style="width:${(m.marks/m.maxMarks)*100}%;background:var(--accent)"></div></div>
+            <div class="marks-bar-wrap">
+              <div class="marks-bar-fill"
+                style="width:${(m.marks/m.maxMarks)*100}%;background:var(--accent)">
+              </div>
+            </div>
             <div class="marks-val">${m.marks}/${m.maxMarks}</div>
-          </div>`).join('')}`;
+          </div>`).join('')}
+      `;
     } else {
-      marksDiv.innerHTML = `<div class="card-header"><div class="card-title">Performance</div></div><div style="text-align:center;padding:20px;color:var(--text-muted)">Koi marks nahi</div>`;
+      marksDiv.innerHTML = `<div style="text-align:center;padding:20px">No marks</div>`;
     }
 
+    // ✅ Fees
     const feeData = await apiGet(`/fees/student/${userId}`);
-    const pending = feeData.summary?.pending||0;
-    document.querySelector('#dash-stats .stat-card:nth-child(4) .stat-value').textContent = pending>0?'₹'+(pending/1000).toFixed(0)+'K':'₹0';
+    const pending = feeData.summary?.pending || 0;
 
+    document.querySelector('#dash-stats .stat-card:nth-child(4) .stat-value')
+      .textContent = pending > 0 ? '₹' + (pending/1000).toFixed(0) + 'K' : '₹0';
+
+    // ✅ Assignments
     const asgData  = await apiGet('/assignments');
-    const pendingA = asgData.assignments?.filter(a=>new Date(a.dueDate)>new Date()).length||0;
-    document.querySelector('#dash-stats .stat-card:nth-child(3) .stat-value').textContent = pendingA;
+    const pendingA = asgData.assignments?.filter(a =>
+      new Date(a.dueDate) > new Date()
+    ).length || 0;
 
-  } catch(err) { console.log('Dashboard error:',err); }
+    document.querySelector('#dash-stats .stat-card:nth-child(3) .stat-value')
+      .textContent = pendingA;
+
+  } catch(err) {
+    console.log('Dashboard error:', err);
+  }
 }
-
 async function renderResults(area) {
   const user = getUser();
   area.innerHTML = `
@@ -445,7 +813,7 @@ async function renderResults(area) {
     const data = await apiGet(`/marks/student/${user.id}`);
     const container = document.getElementById('marks-container');
     if (!data.marks||data.marks.length===0) {
-      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">📊</div>Abhi koi marks nahi hain</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)"><i class="fa-solid fa-chart-bar" style="font-size:36px;margin-bottom:8px"></i>No marks available yet</div>`;
       return;
     }
     container.innerHTML = `
@@ -486,7 +854,7 @@ async function renderAttendancePage(area) {
     const data  = await apiGet(`/attendance/student/${user.id}`);
     const rings = document.getElementById('att-rings');
     if (!data.attendance||data.attendance.length===0) {
-      rings.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);grid-column:1/-1">Koi attendance record nahi hai</div>`;
+      rings.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);grid-column:1/-1">No attendance records</div>`;
       return;
     }
     rings.innerHTML = data.attendance.map(a=>`
@@ -508,6 +876,200 @@ async function renderAttendancePage(area) {
   } catch(err) {
     document.getElementById('att-rings').innerHTML = `<div style="color:var(--danger);padding:20px">Error</div>`;
   }
+}
+
+async function renderRegisterFace(area) {
+  const user = getUser();
+  area.innerHTML = `
+    <div class="page-header"><h1>Register Face</h1><p>Register your face for biometric attendance</p></div>
+    
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📹 Camera Feed</div></div>
+        <div style="padding:16px">
+          <video id="register-video" autoplay muted style="width:100%;border-radius:8px;border:1px solid var(--border)"></video>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-accent" onclick="startRegisterCamera()">🎥 Start Camera</button>
+            <button class="btn btn-success" onclick="captureRegisterFace()">📸 Capture Face</button>
+            <button class="btn btn-danger" onclick="stopRegisterCamera()">⏹️ Stop</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header"><div class="card-title">✅ Registration Status</div></div>
+        <div id="register-status" style="padding:16px;text-align:center;color:var(--text-muted)">
+          <i class="fa-solid fa-face-smile" style="font-size:40px;margin-bottom:12px"></i>
+          <div>Start camera and capture your face</div>
+          <div style="font-size:12px;margin-top:8px;color:var(--text-muted)">Multiple captures improve accuracy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📝 Face Registration</div>
+        <button class="btn btn-accent" onclick="saveFaceRegistration()">💾 Save Registration</button>
+      </div>
+      <div id="face-captures" style="padding:16px">
+        <div style="text-align:center;color:var(--text-muted)">
+          <i class="fa-solid fa-camera" style="font-size:36px;margin-bottom:8px"></i>
+          <div>No face captures yet</div>
+          <div style="font-size:12px;margin-top:4px">Capture multiple angles for better recognition</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Load face-api models
+  await loadFaceAPIModels();
+}
+
+let registerStream = null;
+let registerCanvas = null;
+let capturedDescriptors = [];
+
+async function startRegisterCamera() {
+  try {
+    const video = document.getElementById('register-video');
+    registerStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = registerStream;
+    
+    // Create canvas for drawing
+    registerCanvas = faceapi.createCanvasFromMedia(video);
+    registerCanvas.style.position = 'absolute';
+    registerCanvas.style.top = video.offsetTop + 'px';
+    registerCanvas.style.left = video.offsetLeft + 'px';
+    video.parentNode.appendChild(registerCanvas);
+    
+    const displaySize = { width: video.width, height: video.height };
+    faceapi.matchDimensions(registerCanvas, displaySize);
+    
+    showToast('Camera started! Capture your face from different angles.', 'success');
+  } catch(e) {
+    console.log('Camera error:', e);
+    showToast('Camera access denied', 'danger');
+  }
+}
+
+async function captureRegisterFace() {
+  const video = document.getElementById('register-video');
+  
+  if (!video.srcObject) {
+    showToast('Start camera first', 'warning');
+    return;
+  }
+
+  try {
+    const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+    
+    if (!detections) {
+      showToast('No face detected. Try again.', 'warning');
+      return;
+    }
+
+    // Draw detection box
+    if (registerCanvas) {
+      const displaySize = { width: video.width, height: video.height };
+      const resizedDetections = faceapi.resizeResults(detections, displaySize);
+      registerCanvas.getContext('2d').clearRect(0, 0, registerCanvas.width, registerCanvas.height);
+      faceapi.draw.drawDetections(registerCanvas, resizedDetections);
+    }
+
+    // Store descriptor
+    capturedDescriptors.push(detections.descriptor);
+    
+    // Update UI
+    updateFaceCaptures();
+    showToast(`Face captured! (${capturedDescriptors.length} total)`, 'success');
+    
+    const statusDiv = document.getElementById('register-status');
+    statusDiv.innerHTML = `
+      <div style="color:var(--success)">
+        <i class="fa-solid fa-check-circle" style="font-size:40px;margin-bottom:12px"></i>
+        <div style="font-weight:700">Face Captured!</div>
+        <div style="font-size:13px;margin-top:4px">${capturedDescriptors.length} capture(s) saved</div>
+        <div style="font-size:12px;margin-top:8px;color:var(--text-muted)">Capture from different angles for better accuracy</div>
+      </div>`;
+  } catch(e) {
+    console.log('Face capture error:', e);
+    showToast('Error capturing face', 'danger');
+  }
+}
+
+function updateFaceCaptures() {
+  const container = document.getElementById('face-captures');
+  if (capturedDescriptors.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;color:var(--text-muted)">
+        <i class="fa-solid fa-camera" style="font-size:36px;margin-bottom:8px"></i>
+        <div>No face captures yet</div>
+        <div style="font-size:12px;margin-top:4px">Capture multiple angles for better recognition</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="margin-bottom:16px;font-weight:600">Captured Faces (${capturedDescriptors.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
+      ${capturedDescriptors.map((_, i) => `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;background:var(--bg-input)">
+          <i class="fa-solid fa-face-smile" style="font-size:24px;margin-bottom:4px;color:var(--accent)"></i>
+          <div style="font-size:12px;font-weight:600">Capture ${i+1}</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="removeFaceCapture(${i})">❌</button>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:16px;padding:12px;background:var(--accent-soft);border-radius:8px">
+      <div style="font-weight:600;color:var(--accent)">Ready to Register!</div>
+      <div style="font-size:12px;margin-top:4px;color:var(--text-secondary)">Click "Save Registration" to complete face registration</div>
+    </div>`;
+}
+
+function removeFaceCapture(index) {
+  capturedDescriptors.splice(index, 1);
+  updateFaceCaptures();
+  showToast('Capture removed', 'warning');
+}
+
+async function saveFaceRegistration() {
+  if (capturedDescriptors.length === 0) {
+    showToast('Capture at least one face first', 'warning');
+    return;
+  }
+
+  const user = getUser();
+  try {
+    const result = await apiPost('/attendance/register-face', {
+      studentId: user.id,
+      faceDescriptors: capturedDescriptors
+    });
+
+    if (result.success) {
+      showToast('Face registered successfully! You can now use face attendance.', 'success');
+      capturedDescriptors = [];
+      updateFaceCaptures();
+      stopRegisterCamera();
+    } else {
+      showToast('Registration failed', 'danger');
+    }
+  } catch(e) {
+    showToast('Error registering face', 'danger');
+  }
+}
+
+function stopRegisterCamera() {
+  if (registerStream) {
+    registerStream.getTracks().forEach(track => track.stop());
+    registerStream = null;
+  }
+  const video = document.getElementById('register-video');
+  if (video) video.srcObject = null;
+  if (registerCanvas) {
+    registerCanvas.remove();
+    registerCanvas = null;
+  }
+  showToast('Camera stopped', 'accent');
 }
 
 async function renderManageStudents(area) {
@@ -534,7 +1096,7 @@ async function renderManageStudents(area) {
 function renderStudentsTable(students) {
   const container = document.getElementById('students-container');
   if (!students.length) {
-    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">👥</div>Koi student nahi mila</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">👥</div>No student found</div>`;
     return;
   }
   container.innerHTML = `
@@ -566,10 +1128,10 @@ function filterStudents() {
 }
 
 async function deleteStudent(id, name) {
-  if (!confirm(`${name} ko delete karna hai?`)) return;
+  if (!confirm(`Delete ${name}?`)) return;
   try {
     await apiPut(`/students/${id}`,{isActive:false});
-    showToast(`${name} delete ho gaya`,'danger');
+    showToast(`${name} deleted`,'danger');
     renderManageStudents(document.getElementById('content-area'));
   } catch(err) { showToast('Error','danger'); }
 }
@@ -598,7 +1160,7 @@ async function renderCourses(area) {
     const courses = data.courses || [];
     const user    = getUser();
 
-    // LocalStorage se enrolled courses lo
+    // Load enrolled courses from LocalStorage
     const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
 
     const colors = ['#4f6ef7','#22d3a0','#a78bfa','#f7b955','#f75f6e'];
@@ -609,8 +1171,8 @@ async function renderCourses(area) {
       grid.innerHTML = `
         <div style="text-align:center;padding:40px;color:var(--text-muted);grid-column:1/-1">
           <i class="fa-solid fa-book" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
-          <div style="font-weight:600">Koi course nahi hai</div>
-          <div style="font-size:13px;margin-top:8px">Admin se courses add karwao</div>
+          <div style="font-weight:600">No courses available</div>
+          <div style="font-size:13px;margin-top:8px">Contact admin to add courses</div>
         </div>`;
       return;
     }
@@ -660,8 +1222,8 @@ function renderEnrolledCourses(courses, enrolledIds, colors, icons) {
     grid.innerHTML = `
       <div style="text-align:center;padding:40px;color:var(--text-muted);grid-column:1/-1">
         <i class="fa-solid fa-bookmark" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
-        <div style="font-weight:600">Koi course enroll nahi kiya</div>
-        <div style="font-size:13px;margin-top:8px">All Courses tab se enroll karo</div>
+        <div style="font-weight:600">No course enrolled</div>
+        <div style="font-size:13px;margin-top:8px">Enroll from All Courses tab</div>
       </div>`;
     return;
   }
@@ -701,9 +1263,9 @@ function enrollCourse(courseId, courseName) {
     localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(enrolledIds));
   }
 
-  showToast(`${courseName} mein enroll ho gaye!`, 'success');
+  showToast(`Enrolled in ${courseName}!`, 'success');
 
-  // Card update karo
+  // Update card
   const card = document.getElementById(`course-card-${courseId}`);
   if (card) {
     const footer = card.querySelector('.course-footer');
@@ -716,12 +1278,12 @@ function enrollCourse(courseId, courseName) {
 }
 
 function unenrollCourse(courseId, courseName) {
-  if (!confirm(`${courseName} se unenroll karna hai?`)) return;
+  if (!confirm(`Unenroll from ${courseName}?`)) return;
   const user        = getUser();
   const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
   const updated     = enrolledIds.filter(id => id !== courseId);
   localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(updated));
-  showToast(`${courseName} se unenroll ho gaye`, 'warning');
+  showToast(`Unenrolled from ${courseName}`, 'warning');
   renderCourses(document.getElementById('content-area'));
 }
 
@@ -740,7 +1302,7 @@ async function renderTimetable(area) {
       document.getElementById('tt-container').innerHTML = `
         <div style="text-align:center;padding:40px;color:var(--text-muted)">
           <i class="fa-solid fa-calendar" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
-          <div>Admin se courses add karwao — timetable automatically ban jaayega</div>
+          <div>Ask admin to add courses — timetable will be generated automatically</div>
         </div>`;
       return;
     }
@@ -748,10 +1310,14 @@ async function renderTimetable(area) {
     const days  = ['Mon','Tue','Wed','Thu','Fri'];
     const times = ['8-9 AM','9-10 AM','10-11 AM','11-12 PM','12-1 PM','2-3 PM','3-4 PM','4-5 PM'];
 
+    // Time-table refresh (bug fix): only these timetables should be touchable,
+    // keep timetable grid rendering consistent.
+
+
     const rooms   = ['A-101','A-204','B-102','B-201','C-301','C-205','Lab-1','Lab-2','Lab-3'];
     const colors  = ['has-class','has-class green','has-class purple','has-class orange'];
 
-    // Har course ko ek color assign karo
+    // Assign a color to each course
     const courseColors = {};
     courses.forEach((c, i) => { courseColors[c._id] = colors[i % colors.length]; });
 
@@ -765,12 +1331,12 @@ async function renderTimetable(area) {
       return x - Math.floor(x);
     }
 
-    // Timetable generate karo — har week alag
+    // Generate timetable — different each week
     // Rules: ek din mein ek course ek baar, ek slot mein ek hi course
     const schedule = {};
     days.forEach(day => { schedule[day] = {}; });
 
-    // Har course ko week mein 2-3 baar assign karo
+    // Assign each course 2-3 times per week
     courses.forEach((course, ci) => {
       let assigned = 0;
       const targetSlots = Math.min(3, Math.ceil(8 / courses.length) + 1);
@@ -807,7 +1373,7 @@ async function renderTimetable(area) {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div>
           <div style="font-weight:600">Week of ${today.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
-          <div style="font-size:12px;color:var(--text-muted)">Timetable har week automatically rotate hota hai</div>
+          <div style="font-size:12px;color:var(--text-muted)">Timetable rotates automatically every week</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${courses.map(c=>`
@@ -866,7 +1432,7 @@ async function renderAssignments(area) {
     const data = await apiGet('/assignments');
     const container = document.getElementById('asgn-container');
     if (!data.assignments||data.assignments.length===0) {
-      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px">📝</div>Koi assignment nahi hai</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)"><i class="fa-solid fa-file-pen" style="font-size:36px"></i>No assignments available</div>`;
       return;
     }
     container.innerHTML = `
@@ -914,23 +1480,249 @@ function renderLibrary(area) {
     </div>`;
 }
 
-function renderExams(area) {
+const examSessionFallback = {
+  publishedExams: [],
+  practiceTests: []
+};
+
+const examCache = {};
+let activeExamSession = null;
+let examTimerInterval = null;
+
+async function fetchExamList() {
+  try {
+    const response = await apiGet('/exams');
+    if (response.success && Array.isArray(response.exams)) {
+      return response.exams;
+    }
+  } catch (err) {
+    console.error('Exam list fetch failed:', err);
+  }
+  return examSessionFallback.publishedExams;
+}
+
+async function fetchExamById(examId) {
+  try {
+    const response = await apiGet(`/exams/${examId}`);
+    if (response.success && response.exam) {
+      return response.exam;
+    }
+  } catch (err) {
+    console.error('Exam load failed:', err);
+  }
+  return null;
+}
+
+async function submitExamResult(resultPayload) {
+  try {
+    const response = await apiPost('/exams/submit', resultPayload);
+    return response;
+  } catch (err) {
+    console.error('Exam submit failed:', err);
+    return { success: false, message: err.message || 'Submit failed' };
+  }
+}
+
+function formatExamTime(seconds) {
+  const min = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const sec = (seconds % 60).toString().padStart(2, '0');
+  return `${min}:${sec}`;
+}
+
+async function startExam(examId) {
+  const exam = await fetchExamById(examId);
+  if (!exam) { showToast('Exam data not found','danger'); return; }
+
+  activeExamSession = {
+    exam,
+    currentQuestion: 0,
+    answers: Array(exam.questions.length).fill(null),
+    remainingSeconds: exam.duration * 60,
+    completed: false,
+    score: null
+  };
+
+  if (examTimerInterval) clearInterval(examTimerInterval);
+  examTimerInterval = setInterval(() => {
+    if (!activeExamSession) return;
+    activeExamSession.remainingSeconds -= 1;
+    if (activeExamSession.remainingSeconds <= 0) {
+      clearInterval(examTimerInterval);
+      activeExamSession.remainingSeconds = 0;
+      completeExam();
+    }
+    const timerEl = document.getElementById('exam-timer');
+    if (timerEl) timerEl.textContent = formatExamTime(activeExamSession.remainingSeconds);
+  }, 1000);
+  renderExamQuestionView();
+}
+
+function renderExamQuestionView() {
+  const area = document.getElementById('content-area');
+  if (!area || !activeExamSession) return;
+  const { exam, currentQuestion, answers, remainingSeconds } = activeExamSession;
+  const questionData = exam.questions[currentQuestion];
+  const selectedAnswer = answers[currentQuestion];
+  const answeredCount = answers.filter(a => a !== null).length;
+
   area.innerHTML = `
-    <div class="page-header"><h1>Online Exams</h1></div>
+    <div class="page-header"><h1>${exam.title}</h1></div>
     <div class="card" style="margin-bottom:20px">
-      <div style="text-align:center;padding:32px;color:var(--text-muted)">
-        <div style="font-size:48px;margin-bottom:12px">📝</div>
-        <div>Exam schedule admin dwara publish hone ke baad yahan dikhega</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">${exam.title}</div>
+          <div style="color:var(--text-muted);font-size:13px">${exam.questions.length} questions · ${exam.duration} min · ${exam.type === 'practice' ? 'Practice Test' : 'Scheduled Exam'}</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <span class="badge badge-accent">Time left: <strong id="exam-timer">${formatExamTime(remainingSeconds)}</strong></span>
+          <span class="badge badge-${answeredCount === exam.questions.length ? 'success' : 'warning'}">Answered ${answeredCount}/${exam.questions.length}</span>
+        </div>
       </div>
     </div>
     <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">Q${currentQuestion+1}. ${questionData.question}</div>
+          <div style="margin-top:8px;color:var(--text-muted);font-size:13px">Select the correct answer and click Next.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="changeExamQuestion(-1)">Previous</button>
+          <button class="btn btn-accent btn-sm" onclick="changeExamQuestion(1)">Next</button>
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        ${questionData.options.map((option, index) => `
+          <div class="radio-item ${selectedAnswer === index ? 'selected' : ''}" onclick="chooseExamOption(${index})">
+            <span>${option}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <button class="btn btn-danger btn-sm" onclick="completeExam()">Submit Exam</button>
+        <div style="color:var(--text-muted);font-size:13px">You can review all questions before submitting.</div>
+      </div>
+    </div>`;
+}
+
+function chooseExamOption(index) {
+  if (!activeExamSession) return;
+  activeExamSession.answers[activeExamSession.currentQuestion] = index;
+  renderExamQuestionView();
+}
+
+function changeExamQuestion(direction) {
+  if (!activeExamSession) return;
+  const nextIndex = activeExamSession.currentQuestion + direction;
+  if (nextIndex < 0 || nextIndex >= activeExamSession.exam.questions.length) return;
+  activeExamSession.currentQuestion = nextIndex;
+  renderExamQuestionView();
+}
+
+async function completeExam() {
+  if (!activeExamSession) return;
+  if (examTimerInterval) clearInterval(examTimerInterval);
+  const { exam, answers } = activeExamSession;
+  const total = exam.questions.length;
+  const payload = {
+    examId: exam._id || exam.id,
+    answers,
+    timeTaken: exam.duration * 60 - activeExamSession.remainingSeconds
+  };
+
+  const response = await submitExamResult(payload);
+  const correct = answers.reduce((sum, answer, idx) => sum + (answer === exam.questions[idx].answer ? 1 : 0), 0);
+  const score = response.success && typeof response.score === 'number' ? response.score : Math.round((correct / total) * 100);
+
+  activeExamSession.completed = true;
+  activeExamSession.score = score;
+
+  const area = document.getElementById('content-area');
+  if (!area) return;
+  area.innerHTML = `
+    <div class="page-header"><h1>${exam.title} - Result</h1></div>
+    <div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:44px;margin-bottom:16px">🎉</div>
+      <div style="font-weight:700;font-size:22px">Exam Submitted</div>
+      <div style="margin-top:12px;color:var(--text-muted)">Score: <strong>${score}%</strong></div>
+      <div style="margin-top:8px;color:var(--text-muted)">Correct: ${correct} / ${total}</div>
+      <div style="margin-top:24px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-accent btn-sm" onclick="activeExamSession=null;renderExams(document.getElementById('content-area'))">Back to Exams</button>
+        <button class="btn btn-ghost btn-sm" onclick="reviewExamAnswers()">Review Answers</button>
+      </div>
+    </div>`;
+
+  if (!response.success) {
+    showToast(response.message || 'Could not save exam result to backend','warning');
+  } else {
+    showToast('Exam result saved!','success');
+  }
+}
+
+function reviewExamAnswers() {
+  if (!activeExamSession) return;
+  const area = document.getElementById('content-area');
+  const { exam, answers } = activeExamSession;
+  area.innerHTML = `
+    <div class="page-header"><h1>${exam.title} - Review</h1></div>
+    <div class="card">
+      ${exam.questions.map((question, idx) => {
+        const chosen = answers[idx];
+        const correct = question.answer;
+        return `<div style="margin-bottom:18px;padding:16px;border:1px solid var(--bg-input);border-radius:12px">
+          <div style="font-weight:600">Q${idx+1}. ${question.question}</div>
+          ${question.options.map((option, optionIndex) => `
+            <div style="margin-top:8px;padding:10px;border-radius:10px;background:${optionIndex===correct ? 'rgba(34,197,94,0.12)' : optionIndex===chosen ? 'rgba(59,130,246,0.12)' : 'transparent'};border:1px solid ${optionIndex===correct ? '#22c55e33' : optionIndex===chosen ? '#60a5fa33' : 'transparent'}">
+              ${optionIndex===correct ? '✅ ' : optionIndex===chosen ? '🔹 ' : ''}${option}
+            </div>`).join('')}
+          <div style="margin-top:10px;color:var(--text-muted);font-size:13px">Your answer: ${chosen === null ? 'Not answered' : question.options[chosen]}</div>
+        </div>`;
+      }).join('')}
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:20px">
+        <button class="btn btn-accent btn-sm" onclick="activeExamSession=null;renderExams(document.getElementById('content-area'))">Back to Exams</button>
+      </div>
+    </div>`;
+}
+
+async function renderExams(area) {
+  if (!area) return;
+  const exams = await fetchExamList();
+  const practiceTests = exams.filter(exam => exam.type === 'practice');
+  const scheduledExams = exams.filter(exam => exam.type !== 'practice');
+
+  area.innerHTML = `
+    <div class="page-header"><h1>Online Exams</h1></div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><div class="card-title">🗓️ Published Exams</div></div>
+      ${scheduledExams.length ? scheduledExams.map(exam => `
+        <div class="exam-card">
+          <div class="exam-date">
+            <div class="date-num">${new Date(exam.date).getDate()}</div>
+            <div class="date-month">${new Date(exam.date).toLocaleString('default',{month:'short'})}</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700">${exam.title}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${exam.course} · ${exam.duration} min</div>
+            <div style="margin-top:6px;color:var(--text-muted);font-size:13px">${exam.description}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="showToast('Exam details are available to students when the exam opens.','accent')">View</button>
+          </div>
+        </div>
+      `).join('') : '<div style="padding:20px;color:var(--text-muted)">No published exams available yet.</div>'}
+    </div>
+    <div class="card">
       <div class="card-header"><div class="card-title">🧪 Practice Tests</div></div>
-      ${[{title:'ML Mock Test',qs:30,time:'60 min'},{title:'DBMS Practice Quiz',qs:20,time:'30 min'}].map(t=>`
+      ${practiceTests.length ? practiceTests.map(exam => `
         <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-input);border-radius:10px;margin-bottom:8px">
           <span style="font-size:24px">📝</span>
-          <div style="flex:1"><div style="font-weight:600">${t.title}</div><div style="font-size:12px;color:var(--text-muted)">${t.qs} Questions · ${t.time}</div></div>
-          <button class="btn btn-accent btn-sm" onclick="showToast('Starting...','accent')">Start Test</button>
-        </div>`).join('')}
+          <div style="flex:1">
+            <div style="font-weight:600">${exam.title}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${exam.questions?.length || 0} Questions · ${exam.duration} min</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:6px">${exam.description || ''}</div>
+          </div>
+          <button class="btn btn-accent btn-sm" onclick="startExam('${exam._id || exam.id}')">Start Test</button>
+        </div>
+      `).join('') : '<div style="padding:20px;color:var(--text-muted)">No practice tests are available yet.</div>'}
     </div>`;
 }
 
@@ -941,12 +1733,39 @@ let chatMessages = {};
 
 function initSocket() {
   if (socket) return;
-  socket = io('http://localhost:3000');
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.warn('Socket auth token missing');
+    return;
+  }
+  if (token.startsWith('demo-token-')) {
+    console.warn('Demo mode active: socket.io connection skipped');
+    return;
+  }
+
+  socket = io('http://localhost:3000', {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+    reconnectionAttempts: 5,
+    timeout: 10000
+  });
   const user = getUser();
 
   socket.on('connect', () => {
     console.log('✅ Socket connected!');
     socket.emit('user_online', user.id);
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error('Socket connect error:', err.message || err);
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('Socket disconnected:', reason);
+  });
+
+  socket.on('reconnect_attempt', (count) => {
+    console.log(`Socket reconnect attempt ${count}`);
   });
 
   // Private message aaya
@@ -1053,7 +1872,7 @@ async function renderChat(area) {
         <div class="card" style="display:flex;flex-direction:column;padding:0;overflow:hidden" id="chat-window">
           <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);flex-direction:column;gap:12px">
             <i class="fa-solid fa-comments" style="font-size:40px;opacity:.3"></i>
-            <div>Kisi user ko select karo chat karne ke liye</div>
+            <div>Select a user to start chatting</div>
           </div>
         </div>
 
@@ -1078,14 +1897,14 @@ async function renderChat(area) {
         <div class="card" style="display:flex;flex-direction:column;padding:0;overflow:hidden" id="group-chat-window">
           <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);flex-direction:column;gap:12px">
             <i class="fa-solid fa-users" style="font-size:40px;opacity:.3"></i>
-            <div>Koi group select karo</div>
+            <div>Select a group</div>
           </div>
         </div>
 
       </div>
     </div>`;
 
-  // Users load karo
+  // Load users
   loadChatUsers();
   loadChatGroups();
 }
@@ -1097,7 +1916,7 @@ async function loadChatUsers() {
     if (!list) return;
 
     if (!data.users?.length) {
-      list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Koi user nahi hai</div>`;
+      list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">No users available</div>`;
       return;
     }
 
@@ -1134,7 +1953,7 @@ async function loadChatGroups() {
     if (!list) return;
 
     if (!data.courses?.length) {
-      list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">Koi group nahi hai</div>`;
+      list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">No groups available</div>`;
       return;
     }
 
@@ -1154,18 +1973,12 @@ async function loadChatGroups() {
   } catch(err) {}
 }
 
-function openPrivateChat(userId, userName, userRole) {
+async function openPrivateChat(userId, userName, userRole) {
   currentChatUser = { id: userId, name: userName, type: 'private' };
-
-  // Active highlight
-  document.querySelectorAll('[id^="user-item-"]').forEach(el => el.style.background = 'transparent');
-  const item = document.getElementById(`user-item-${userId}`);
-  if (item) item.style.background = 'var(--accent-soft)';
 
   const onlineUsers = window._onlineUsers || [];
   const isOnline    = onlineUsers.includes(userId);
   const initials    = userName.split(' ').map(n=>n[0]).join('').toUpperCase();
-  const msgs        = chatMessages[userId] || [];
 
   const chatWindow = document.getElementById('chat-window');
   if (!chatWindow) return;
@@ -1182,15 +1995,7 @@ function openPrivateChat(userId, userName, userRole) {
       </div>
     </div>
     <div id="chat-messages-area" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column">
-      ${msgs.length === 0
-        ? `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:auto">Conversation shuru karo!</div>`
-        : msgs.map(m => `
-          <div style="display:flex;flex-direction:${m.isMe?'row-reverse':'row'};gap:8px;margin-bottom:12px">
-            <div>
-              ${!m.isMe?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">${m.senderName}</div>`:''}
-              <div style="background:${m.isMe?'var(--accent)':'var(--bg-input)'};color:${m.isMe?'white':'var(--text-primary)'};padding:10px 14px;border-radius:14px;font-size:13px;max-width:280px;word-wrap:break-word">${m.message}</div>
-            </div>
-          </div>`).join('')}
+      <div style="text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:12px">Loading messages...</div>
     </div>
     <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">
       <input id="private-msg-input" placeholder="Message likho..." style="border-radius:10px;flex:1"
@@ -1200,15 +2005,34 @@ function openPrivateChat(userId, userName, userRole) {
       </button>
     </div>`;
 
-  const area = document.getElementById('chat-messages-area');
-  if (area) area.scrollTop = area.scrollHeight;
+  // Load history from DB
+  try {
+    const me   = getUser();
+    const data = await apiGet(`/messages/private/${me.id}/${userId}`);
+    const area = document.getElementById('chat-messages-area');
+    if (!area) return;
+
+    if (!data.messages?.length) {
+      area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:auto">Start a conversation!</div>`;
+    } else {
+      area.innerHTML = '';
+      data.messages.forEach(m => {
+        const isMe = m.senderId.toString() === me.id;
+        appendMessage(m.message, isMe, isMe ? me.name : userName);
+      });
+    }
+    area.scrollTop = area.scrollHeight;
+  } catch(e) {
+    const area = document.getElementById('chat-messages-area');
+    if (area) area.innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:auto">Start a conversation!</div>`;
+  }
 }
 
 function openGroupChat(courseId, courseName) {
   const groupKey    = `group_${courseId}`;
   currentChatUser   = { id: groupKey, name: courseName, type: 'group', courseId };
 
-  // Socket room join karo
+  // Join socket room
   if (socket) socket.emit('join_group', courseId);
 
   const msgs = chatMessages[groupKey] || [];
@@ -1229,7 +2053,7 @@ function openGroupChat(courseId, courseName) {
     </div>
     <div id="chat-messages-area" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column">
       ${msgs.length === 0
-        ? `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:auto">Group chat shuru karo!</div>`
+        ? `<div style="text-align:center;color:var(--text-muted);font-size:13px;margin:auto">Start group chat!</div>`
         : msgs.map(m => `
           <div style="display:flex;flex-direction:${m.isMe?'row-reverse':'row'};gap:8px;margin-bottom:12px">
             <div>
@@ -1250,42 +2074,43 @@ function openGroupChat(courseId, courseName) {
   if (area) area.scrollTop = area.scrollHeight;
 }
 
-function sendPrivateMessage(receiverId, receiverName) {
+async function sendPrivateMessage(receiverId, receiverName) {
   const input = document.getElementById('private-msg-input');
   const msg   = input?.value?.trim();
   if (!msg) return;
 
   const user = getUser();
-  if (!socket) { showToast('Socket connected nahi hai!', 'danger'); return; }
+  if (!socket) { showToast('Socket not connected!','danger'); return; }
 
   const data = {
-    senderId:     user.id,
-    senderName:   user.name,
-    receiverId,
-    receiverName,
-    message:      msg,
-    timestamp:    new Date().toISOString()
+    senderId: user.id, senderName: user.name,
+    receiverId, receiverName, message: msg,
+    timestamp: new Date().toISOString()
   };
 
   socket.emit('private_message', data);
-
-  // Apna message turant dikhao
   appendMessage(msg, true, user.name);
 
-  // History mein save karo
   if (!chatMessages[receiverId]) chatMessages[receiverId] = [];
   chatMessages[receiverId].push({ ...data, isMe: true });
 
+  // Save to DB
+  try {
+    await apiPost('/messages', {
+      senderId: user.id, receiverId,
+      message: msg, type: 'private'
+    });
+  } catch(e) { console.log('Message save error:', e); }
+
   input.value = '';
 }
-
 function sendGroupMessage(courseId, courseName) {
   const input = document.getElementById('group-msg-input');
   const msg   = input?.value?.trim();
   if (!msg) return;
 
   const user = getUser();
-  if (!socket) { showToast('Socket connected nahi hai!', 'danger'); return; }
+  if (!socket) { showToast('Socket not connected!', 'danger'); return; }
 
   const data = {
     courseId,
@@ -1317,14 +2142,122 @@ function switchChatTab(btn, tabId) {
 function renderCampusMap(area) {
   area.innerHTML = `
     <div class="page-header"><h1>Campus Map</h1></div>
-    <div class="card">
-      <div class="map-placeholder" style="height:360px">
-        <div style="font-size:64px">🏛️</div>
-        <div style="font-weight:600;font-size:16px">Interactive Campus Map</div>
-        <div style="font-size:13px;max-width:280px;line-height:1.6;color:var(--text-secondary)">Google Maps API integration for building locations and navigation</div>
-        <button class="btn btn-accent" onclick="showToast('Maps API key required','warning')">Enable Navigation</button>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div class="card-title">🗺 Campus Map</div>
+          <div style="font-size:12px;color:var(--text-muted)">Interactive campus map with route, building, and bus stop info.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="mapShowCampus()">Campus Center</button>
+          <button class="btn btn-accent btn-sm" onclick="mapShowBuildings()">Buildings</button>
+          <button class="btn btn-accent btn-sm" onclick="mapShowBusStops()">Bus Stops</button>
+        </div>
       </div>
+      <div id="campus-map" style="height:500px;width:100%"></div>
     </div>`;
+  loadLeaflet(initCampusMap);
+}
+
+function initCampusMap() {
+  const mapDiv = document.getElementById('campus-map');
+  if (!mapDiv || mapDiv._leaflet_id) return;
+
+  const COLLEGE_LAT = 28.4089;
+  const COLLEGE_LNG = 77.3178;
+  const map = L.map('campus-map').setView([COLLEGE_LAT, COLLEGE_LNG], 15);
+  window._campusMap = map;
+  window._campusCenter = [COLLEGE_LAT, COLLEGE_LNG];
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19,
+  }).addTo(map);
+
+  const campusIcon = L.divIcon({
+    html: '<div style="background:#22d3a0;color:white;border-radius:12px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,.25)">🏫</div>',
+    className: '',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40]
+  });
+
+  const buildingIcon = L.divIcon({
+    html: '<div style="background:#4f6ef7;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.2)">🏛</div>',
+    className: '',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30]
+  });
+
+  const stopIcon = L.divIcon({
+    html: '<div style="background:#f7b955;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,.2)">🛑</div>',
+    className: '',
+    iconSize: [26, 26],
+    iconAnchor: [13, 26]
+  });
+
+  const buildings = [
+    { name: 'Main Academic Block', lat: 28.4095, lng: 77.3180 },
+    { name: 'Library & Learning Center', lat: 28.4082, lng: 77.3168 },
+    { name: 'Science Labs', lat: 28.4088, lng: 77.3191 },
+    { name: 'Sports Complex', lat: 28.4075, lng: 77.3170 },
+    { name: 'Hostel Block', lat: 28.4070, lng: 77.3185 }
+  ];
+
+  const busStops = [
+    { name: 'Faridabad City Stop', lat: 28.4301, lng: 77.3150, eta: '8 min' },
+    { name: 'Sector 28 Stop', lat: 28.3950, lng: 77.3300, eta: '22 min' },
+    { name: 'NIT Gate Stop', lat: 28.3870, lng: 77.3080, eta: 'Arrived' }
+  ];
+
+  const campusMarker = L.marker([COLLEGE_LAT, COLLEGE_LNG], { icon: campusIcon })
+    .addTo(map)
+    .bindPopup('<strong>🏫 KD Campus</strong><br>Main campus location');
+
+  const buildingMarkers = buildings.map(b => L.marker([b.lat, b.lng], { icon: buildingIcon })
+    .bindPopup(`<strong>${b.name}</strong>`));
+  const busStopMarkers = busStops.map(s => L.marker([s.lat, s.lng], { icon: stopIcon })
+    .bindPopup(`<strong>${s.name}</strong><br>ETA: ${s.eta}`));
+
+  window._campusBuildingsLayer = L.layerGroup(buildingMarkers).addTo(map);
+  window._campusBusStopsLayer = L.layerGroup(busStopMarkers).addTo(map);
+
+  L.polyline(
+    [[28.4301, 77.3150], [28.4200, 77.3050], [COLLEGE_LAT, COLLEGE_LNG]],
+    { color: '#22d3a0', weight: 4, opacity: 0.8, dashArray: '8,4' }
+  ).addTo(map);
+  L.polyline(
+    [[28.3950, 77.3300], [COLLEGE_LAT, COLLEGE_LNG]],
+    { color: '#4f6ef7', weight: 4, opacity: 0.8, dashArray: '8,4' }
+  ).addTo(map);
+  L.polyline(
+    [[28.3870, 77.3080], [COLLEGE_LAT, COLLEGE_LNG]],
+    { color: '#f7b955', weight: 4, opacity: 0.8, dashArray: '8,4' }
+  ).addTo(map);
+}
+
+function mapShowCampus() {
+  if (window._campusMap && window._campusCenter) {
+    window._campusMap.setView(window._campusCenter, 15);
+    showToast('Campus center par aa gaye!','success');
+  }
+}
+
+function mapShowBuildings() {
+  if (window._campusMap && window._campusBuildingsLayer) {
+    window._campusBuildingsLayer.addTo(window._campusMap);
+    const bounds = window._campusBuildingsLayer.getBounds();
+    if (bounds.isValid()) window._campusMap.fitBounds(bounds.pad(0.5));
+    showToast('Campus buildings are visible.','accent');
+  }
+}
+
+function mapShowBusStops() {
+  if (window._campusMap && window._campusBusStopsLayer) {
+    window._campusBusStopsLayer.addTo(window._campusMap);
+    const bounds = window._campusBusStopsLayer.getBounds();
+    if (bounds.isValid()) window._campusMap.fitBounds(bounds.pad(0.5));
+    showToast('Bus stops are being shown.','accent');
+  }
 }
 
 function renderPlacement(area) {
@@ -1403,7 +2336,7 @@ async function renderStudentList(area) {
   try {
     const data = await apiGet('/students');
     const container = document.getElementById('fac-students-container');
-    if (!data.students?.length) { container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)">Koi student nahi</div>`; return; }
+    if (!data.students?.length) { container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)">No students</div>`; return; }
     container.innerHTML = `
       <div class="table-wrap"><table>
         <thead><tr><th>Student</th><th>Email</th><th>Department</th><th>Actions</th></tr></thead>
@@ -1441,14 +2374,14 @@ async function renderMarkAttendance(area) {
     <div class="card" id="att-students-list">
       <div style="text-align:center;padding:32px;color:var(--text-muted)">
         <i class="fa-solid fa-clipboard-check" style="font-size:40px;margin-bottom:12px;color:var(--accent)"></i>
-        <div>Pehle course select karo</div>
+        <div>Select course first</div>
       </div>
     </div>
     <button class="btn btn-accent" style="width:100%;margin-top:16px" onclick="saveAttendance()">
       <i class="fa-solid fa-floppy-disk"></i> Save Attendance
     </button>`;
 
-  // Courses load karo dropdown mein
+  // Load courses in dropdown
   try {
     const data = await apiGet('/courses');
     const select = document.getElementById('att-course-select');
@@ -1460,7 +2393,7 @@ async function renderMarkAttendance(area) {
         select.appendChild(opt);
       });
     } else {
-      showToast('Pehle Admin se courses add karwao', 'warning');
+      showToast('Ask admin to add courses first', 'warning');
     }
   } catch(e) { showToast('Courses load error', 'danger'); }
 }
@@ -1477,7 +2410,7 @@ async function loadStudentsForAttendance() {
     const students = data.students || [];
 
     if (!students.length) {
-      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">Koi student nahi hai</div>`;
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">No students available</div>`;
       return;
     }
 
@@ -1532,17 +2465,296 @@ function setStudentAttendance(studentId, status) {
 function markAllAttendance(status) {
   const students = window._attStudents || [];
   students.forEach(s => setStudentAttendance(s._id, status));
-  showToast(`All students ${status} mark ho gaye!`, 'success');
+  showToast(`All students marked ${status}!`, 'success');
 }
+
+async function renderFaceAttendance(area) {
+  area.innerHTML = `
+    <div class="page-header"><h1>Face Attendance</h1><p>Biometric attendance using face recognition</p></div>
+    
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📹 Camera Feed</div></div>
+        <div style="padding:16px">
+          <video id="face-video" autoplay muted style="width:100%;border-radius:8px;border:1px solid var(--border)"></video>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-accent" onclick="startFaceAttendance()">🎥 Start Camera</button>
+            <button class="btn btn-success" onclick="captureFace()">📸 Capture Face</button>
+            <button class="btn btn-danger" onclick="stopFaceAttendance()">⏹️ Stop</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header"><div class="card-title">✅ Recognition Result</div></div>
+        <div id="face-result" style="padding:16px;text-align:center;color:var(--text-muted)">
+          <i class="fa-solid fa-face-viewfinder" style="font-size:40px;margin-bottom:12px"></i>
+          <div>Start camera and capture face</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📝 Attendance Session</div>
+        <div style="display:flex;gap:8px">
+          <select id="face-course-select" style="width:auto">
+            <option value="">Select Course</option>
+          </select>
+          <input type="date" id="face-date" value="${new Date().toISOString().split('T')[0]}" style="width:auto">
+        </div>
+      </div>
+      <div id="face-attendance-list" style="padding:16px">
+        <div style="text-align:center;color:var(--text-muted)">
+          <i class="fa-solid fa-users" style="font-size:36px;margin-bottom:8px"></i>
+          <div>Select course to start attendance session</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Load courses
+  try {
+    const data = await apiGet('/courses');
+    const select = document.getElementById('face-course-select');
+    if (data.courses?.length > 0) {
+      data.courses.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c._id;
+        opt.textContent = `${c.name} (${c.code})`;
+        select.appendChild(opt);
+      });
+    } else {
+      // Demo courses
+      const demoCourses = [
+        { _id: 'demo-course-1', name: 'Computer Science 101', code: 'CS101' },
+        { _id: 'demo-course-2', name: 'Mathematics 201', code: 'MATH201' },
+        { _id: 'demo-course-3', name: 'Physics 301', code: 'PHY301' }
+      ];
+      demoCourses.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c._id;
+        opt.textContent = `${c.name} (${c.code})`;
+        select.appendChild(opt);
+      });
+    }
+  } catch(e) {
+    // Demo courses fallback
+    const select = document.getElementById('face-course-select');
+    const demoCourses = [
+      { _id: 'demo-course-1', name: 'Computer Science 101', code: 'CS101' },
+      { _id: 'demo-course-2', name: 'Mathematics 201', code: 'MATH201' },
+      { _id: 'demo-course-3', name: 'Physics 301', code: 'PHY301' }
+    ];
+    demoCourses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c._id;
+      opt.textContent = `${c.name} (${c.code})`;
+      select.appendChild(opt);
+    });
+  }
+
+  // Load face-api models
+  await loadFaceAPIModels();
+}
+
+async function loadFaceAPIModels() {
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+    console.log('Face API models loaded');
+  } catch(e) {
+    console.log('Error loading face models:', e);
+    showToast('Face recognition models failed to load', 'danger');
+  }
+}
+
+async function startFaceAttendance() {
+  try {
+    const video = document.getElementById('face-video');
+    faceStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = faceStream;
+    
+    // Create canvas for drawing
+    faceCanvas = faceapi.createCanvasFromMedia(video);
+    faceCanvas.style.position = 'absolute';
+    faceCanvas.style.top = video.offsetTop + 'px';
+    faceCanvas.style.left = video.offsetLeft + 'px';
+    video.parentNode.appendChild(faceCanvas);
+    
+    const displaySize = { width: video.width, height: video.height };
+    faceapi.matchDimensions(faceCanvas, displaySize);
+    
+    showToast('Camera started! Click capture to recognize face.', 'success');
+  } catch(e) {
+    console.log('Camera error:', e);
+    showToast('Camera access denied or unavailable', 'danger');
+  }
+}
+
+async function captureFace() {
+  const video = document.getElementById('face-video');
+  const courseId = document.getElementById('face-course-select')?.value;
+  
+  if (!video.srcObject) {
+    showToast('Start camera first', 'warning');
+    return;
+  }
+  
+  if (!courseId) {
+    showToast('Select course first', 'warning');
+    return;
+  }
+
+  try {
+    const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+    
+    if (!detections) {
+      showToast('No face detected. Try again.', 'warning');
+      return;
+    }
+
+    // Draw detection box
+    if (faceCanvas) {
+      const displaySize = { width: video.width, height: video.height };
+      const resizedDetections = faceapi.resizeResults(detections, displaySize);
+      faceCanvas.getContext('2d').clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+      faceapi.draw.drawDetections(faceCanvas, resizedDetections);
+    }
+
+    // Send to backend for verification
+    const result = await apiPost('/attendance/face-verify', {
+      courseId: courseId,
+      faceDescriptor: Array.from(detections.descriptor)
+    });
+
+    const resultDiv = document.getElementById('face-result');
+    if (result.success) {
+      resultDiv.innerHTML = `
+        <div style="color:var(--success)">
+          <i class="fa-solid fa-check-circle" style="font-size:40px;margin-bottom:12px"></i>
+          <div style="font-weight:700;font-size:16px">${result.student.name}</div>
+          <div style="font-size:13px;margin-bottom:8px">${result.student.email}</div>
+          <div style="font-size:12px;color:var(--text-muted)">Confidence: ${Math.round(result.confidence * 100)}%</div>
+          <button class="btn btn-success btn-sm" style="margin-top:12px" onclick="markFaceAttendance('${result.student.id}')">
+            ✅ Mark Present
+          </button>
+        </div>`;
+      showToast(`Face recognized: ${result.student.name}`, 'success');
+    } else {
+      resultDiv.innerHTML = `
+        <div style="color:var(--danger)">
+          <i class="fa-solid fa-times-circle" style="font-size:40px;margin-bottom:12px"></i>
+          <div style="font-weight:700">Face Not Recognized</div>
+          <div style="font-size:13px;margin-top:4px">${result.message}</div>
+        </div>`;
+      showToast('Face not recognized', 'danger');
+    }
+
+  } catch(e) {
+    console.log('Face capture error:', e);
+    showToast('Error processing face', 'danger');
+  }
+}
+
+async function markFaceAttendance(studentId) {
+  const courseId = document.getElementById('face-course-select')?.value;
+  const date = document.getElementById('face-date')?.value;
+  
+  if (!courseId || !date) {
+    showToast('Course or date missing', 'warning');
+    return;
+  }
+
+  try {
+    const result = await apiPost('/attendance', {
+      courseId: courseId,
+      date: date,
+      records: [{ studentId: studentId, status: 'present' }],
+      facultyId: getUser().id
+    });
+    
+    if (result.success) {
+      showToast('Attendance marked successfully!', 'success');
+      loadFaceAttendanceList();
+    } else {
+      showToast('Failed to mark attendance', 'danger');
+    }
+  } catch(e) {
+    showToast('Error marking attendance', 'danger');
+  }
+}
+
+async function loadFaceAttendanceList() {
+  const courseId = document.getElementById('face-course-select')?.value;
+  const date = document.getElementById('face-date')?.value;
+  
+  if (!courseId) return;
+
+  const listDiv = document.getElementById('face-attendance-list');
+  listDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>`;
+
+  try {
+    // Get course students
+    const courseData = await apiGet(`/courses/${courseId}`);
+    const students = courseData.course?.students || [];
+    
+    // Get today's attendance
+    const attData = await apiGet(`/attendance?courseId=${courseId}&date=${date}`);
+    const attendance = attData.attendance || [];
+    
+    const presentIds = attendance.flatMap(a => a.records.filter(r => r.status === 'present').map(r => r.studentId.toString()));
+    
+    listDiv.innerHTML = `
+      <div style="margin-bottom:16px;font-weight:600">Today's Attendance (${new Date(date).toLocaleDateString('en-IN')})</div>
+      ${students.map(s => {
+        const isPresent = presentIds.includes(s._id.toString());
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div class="user-avatar" style="width:32px;height:32px;font-size:11px">${s.name.split(' ').map(n=>n[0]).join('').toUpperCase()}</div>
+            <div style="flex:1">
+              <div style="font-weight:600">${s.name}</div>
+              <div style="font-size:12px;color:var(--text-muted)">${s.email}</div>
+            </div>
+            <span class="badge badge-${isPresent?'success':'danger'}">${isPresent?'Present':'Absent'}</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    listDiv.innerHTML = `<div style="color:var(--danger);padding:20px">Error loading attendance</div>`;
+  }
+}
+
+function stopFaceAttendance() {
+  if (faceStream) {
+    faceStream.getTracks().forEach(track => track.stop());
+    faceStream = null;
+  }
+  const video = document.getElementById('face-video');
+  if (video) video.srcObject = null;
+  if (faceCanvas) {
+    faceCanvas.remove();
+    faceCanvas = null;
+  }
+  showToast('Camera stopped', 'accent');
+}
+
+// Event listener for course change
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'face-course-select') {
+    loadFaceAttendanceList();
+  }
+});
 
 async function saveAttendance() {
   const courseId = document.getElementById('att-course-select')?.value;
   const date     = document.getElementById('att-date')?.value;
   const students = window._attStudents || [];
-  const user     = getUser(); // ← yeh add karo
+  const user     = getUser(); // ← add this
 
-  if (!courseId) { showToast('Course select karo pehle', 'warning'); return; }
-  if (!students.length) { showToast('Students nahi hain', 'warning'); return; }
+  if (!courseId) { showToast('Select a course first', 'warning'); return; }
+  if (!students.length) { showToast('No students', 'warning'); return; }
 
   const records = students.map(s => ({
     studentId: s._id,
@@ -1554,10 +2766,10 @@ async function saveAttendance() {
       courseId,
       date,
       records,
-      facultyId: user.id  // ← yeh add karo
+      facultyId: user.id  // ← add this
     });
     if (data.success) {
-      showToast('Attendance save ho gayi!', 'success');
+      showToast('Attendance saved!', 'success');
     } else {
       showToast(data.message || 'Error', 'danger');
     }
@@ -1582,7 +2794,7 @@ async function renderFacultyAssignments(area) {
   try {
     const data = await apiGet('/assignments');
     const list = document.getElementById('fac-asgn-list');
-    if (!data.assignments?.length) { list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text-muted)">Koi assignment nahi</div>`; return; }
+    if (!data.assignments?.length) { list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text-muted)">No assignments</div>`; return; }
     list.innerHTML = data.assignments.map(a=>{
       const due=new Date(a.dueDate).toLocaleDateString('en-IN');
       return `<div style="padding:14px;background:var(--bg-input);border-radius:10px;margin-bottom:8px">
@@ -1629,7 +2841,7 @@ function renderUploadNotes(area) {
 
 async function renderUploadMarks(area) {
   area.innerHTML = `
-    <div class="page-header"><h1>Upload Marks</h1><p>Student marks enter karo aur publish karo</p></div>
+    <div class="page-header"><h1>Upload Marks</h1><p>Enter student marks and publish</p></div>
 
     <!-- Filters -->
     <div class="card" style="margin-bottom:16px">
@@ -1656,11 +2868,11 @@ async function renderUploadMarks(area) {
     <div class="card" id="marks-students-container">
       <div style="text-align:center;padding:40px;color:var(--text-muted)">
         <i class="fa-solid fa-chart-bar" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
-        <div>Pehle course select karo</div>
+        <div>Select course first</div>
       </div>
     </div>`;
 
-  // Courses load karo
+  // Load courses
   try {
     const data   = await apiGet('/courses');
     const select = document.getElementById('marks-course-select');
@@ -1672,7 +2884,7 @@ async function renderUploadMarks(area) {
         select.appendChild(opt);
       });
     } else {
-      showToast('Pehle Admin se courses add karwao', 'warning');
+      showToast('Ask admin to add courses first', 'warning');
     }
   } catch(e) { showToast('Courses load error', 'danger'); }
 }
@@ -1689,7 +2901,7 @@ async function loadStudentsForMarks() {
     const students = data.students || [];
 
     if (!students.length) {
-      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">Koi student nahi hai</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">No students available</div>`;
       return;
     }
 
@@ -1770,9 +2982,9 @@ async function saveSingleMark(studentId, studentName) {
   const marks     = parseInt(document.getElementById(`marks-${studentId}`)?.value);
   const maxMarks  = parseInt(document.getElementById(`max-${studentId}`)?.value) || 50;
 
-  if (!courseId) { showToast('Course select karo', 'warning'); return; }
+  if (!courseId) { showToast('Select course', 'warning'); return; }
   if (isNaN(marks) || marks < 0) { showToast('Valid marks daalo', 'warning'); return; }
-  if (marks > maxMarks) { showToast(`Marks ${maxMarks} se zyada nahi ho sakte`, 'warning'); return; }
+  if (marks > maxMarks) { showToast(`Marks cannot exceed ${maxMarks}`, 'warning'); return; }
 
   try {
     const data = await apiPost('/marks', {
@@ -1785,8 +2997,8 @@ async function saveSingleMark(studentId, studentName) {
     });
 
     if (data.success) {
-      showToast(`${studentName} ke marks save ho gaye!`, 'success');
-      // Row highlight karo
+      showToast(`${studentName}'s marks saved!`, 'success');
+      // Highlight row
       const row = document.getElementById(`marks-row-${studentId}`);
       if (row) {
         row.style.background = 'var(--success-soft)';
@@ -1803,8 +3015,8 @@ async function publishAllMarks() {
   const examType  = document.getElementById('marks-exam-type')?.value || 'internal';
   const students  = window._marksStudents || [];
 
-  if (!courseId) { showToast('Course select karo pehle', 'warning'); return; }
-  if (!students.length) { showToast('Students load karo pehle', 'warning'); return; }
+  if (!courseId) { showToast('Select course first', 'warning'); return; }
+  if (!students.length) { showToast('Load students first', 'warning'); return; }
 
   let saved = 0, errors = 0;
 
@@ -1828,7 +3040,7 @@ async function publishAllMarks() {
     } catch(e) { errors++; }
   }
 
-  if (saved > 0) showToast(`${saved} students ke marks publish ho gaye!`, 'success');
+  if (saved > 0) showToast(`${saved} students' marks published!`, 'success');
   if (errors > 0) showToast(`${errors} errors aaye`, 'danger');
 }
 
@@ -1865,8 +3077,8 @@ async function renderFacultyCourses(area) {
       grid.innerHTML = `
         <div style="text-align:center;padding:40px;color:var(--text-muted);grid-column:1/-1">
           <i class="fa-solid fa-book" style="font-size:40px;margin-bottom:12px;color:var(--text-muted)"></i>
-          <div style="font-weight:600">Koi course assign nahi hai</div>
-          <div style="font-size:13px;margin-top:8px">Admin se course assign karwao</div>
+          <div style="font-weight:600">No courses assigned</div>
+          <div style="font-size:13px;margin-top:8px">Contact admin to assign courses</div>
         </div>`;
       return;
     }
@@ -1897,17 +3109,143 @@ async function renderFacultyCourses(area) {
   }
 }
 
-function renderAnnouncements(area) {
+async function renderAnnouncements(area) {
+  const user = getUser();
   area.innerHTML = `
     <div class="page-header"><h1>Announcements</h1></div>
-    <div class="card">
-      <div class="form-group"><label>Title</label><input placeholder="Announcement title..."></div>
-      <div class="form-group"><label>Message</label><textarea rows="5" placeholder="Type your announcement..."></textarea></div>
-      <div style="display:flex;gap:12px">
-        <button class="btn btn-accent" onclick="showToast('Announcement posted!','success')">📢 Post</button>
-        <button class="btn btn-ghost" onclick="showToast('Email sent!','success')">📧 Email</button>
+
+    <!-- Create -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:16px">New Announcement</div>
+      <div class="form-group"><label>Title</label><input id="ann-title" placeholder="Announcement title..."></div>
+      <div class="form-group"><label>Message</label><textarea id="ann-content" rows="4" placeholder="Type your announcement..."></textarea></div>
+      <div class="form-group"><label>Type</label>
+        <select id="ann-type">
+          <option value="general">General</option>
+          <option value="exam">Exam</option>
+          <option value="holiday">Holiday</option>
+          <option value="event">Event</option>
+          <option value="fee">Fee</option>
+        </select>
       </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn btn-accent" onclick="postAnnouncement('${user.id}')">
+          <i class="fa-solid fa-bullhorn"></i> Post Announcement
+        </button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div id="ann-list">
+      <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>
     </div>`;
+
+  loadAnnouncements();
+}
+
+async function postAnnouncement(postedBy) {
+  const title   = document.getElementById('ann-title')?.value?.trim();
+  const content = document.getElementById('ann-content')?.value?.trim();
+  const type    = document.getElementById('ann-type')?.value;
+
+  if (!title||!content) { showToast('Please fill title and message','warning'); return; }
+
+  try {
+    const data = await apiPost('/announcements', { title, content, type, postedBy });
+    if (data.success) {
+      showToast('Announcement posted!','success');
+      document.getElementById('ann-title').value   = '';
+      document.getElementById('ann-content').value = '';
+      loadAnnouncements();
+      updateNotificationBadgeOnLoad(); // Update badge after posting
+    } else showToast(data.message||'Error','danger');
+  } catch(e) { showToast('Server error','danger'); }
+}
+
+async function loadAnnouncements() {
+  try {
+    const data = await apiGet('/announcements');
+    const list = document.getElementById('ann-list');
+    if (!list) return;
+    if (!data.notices?.length) {
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">No announcements available</div>`;
+      return;
+    }
+    const typeColors = { general:'accent', exam:'danger', holiday:'success', event:'purple', fee:'warning' };
+    list.innerHTML = data.notices.map(n => `
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:15px">${n.title}</div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${n.content}</div>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <span class="badge badge-${typeColors[n.type]||'accent'}">${n.type}</span>
+              <span style="font-size:11px;color:var(--text-muted)">
+                ${n.postedBy?.name||'Admin'} · ${new Date(n.createdAt).toLocaleDateString('en-IN')}
+              </span>
+            </div>
+          </div>
+          ${currentRole==='faculty'||currentRole==='admin'?`
+            <button class="btn btn-danger btn-sm" onclick="deleteAnnouncement('${n._id}')">
+              <i class="fa-solid fa-trash"></i>
+            </button>`:''}
+        </div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function deleteAnnouncement(id) {
+  if (!confirm('Delete this announcement?')) return;
+  try {
+    const token = localStorage.getItem('token');
+    await fetch(`${API}/announcements/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+    showToast('Deleted!','danger');
+    loadAnnouncements();
+    updateNotificationBadgeOnLoad(); // Update badge after deleting
+  } catch(e) { showToast('Error','danger'); }
+}
+
+async function renderStudentAnnouncements(area) {
+  area.innerHTML = `
+    <div class="page-header">
+      <h1>Announcements</h1>
+    </div>
+    <div class="card">
+      <div id="student-announcements-list">
+        <div style="text-align:center;padding:32px;color:var(--text-muted)">Loading announcements...</div>
+      </div>
+    </div>
+  `;
+  
+  try {
+    const data = await apiGet('/announcements');
+    const list = document.getElementById('student-announcements-list');
+    if (!data.notices?.length) {
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">No announcements available</div>`;
+      return;
+    }
+    
+    const typeColors = { general:'accent', exam:'danger', holiday:'success', event:'purple', fee:'warning' };
+    list.innerHTML = data.notices.map(n => `
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:15px">${n.title}</div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-top:6px">${n.content}</div>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <span class="badge badge-${typeColors[n.type]||'accent'}">${n.type}</span>
+              <span style="font-size:11px;color:var(--text-muted)">
+                ${n.postedBy?.name||'Admin'} · ${new Date(n.createdAt).toLocaleDateString('en-IN')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    const list = document.getElementById('student-announcements-list');
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">Failed to load announcements</div>`;
+  }
 }
 
 // ═══════════ ADMIN PAGES ═══════════
@@ -1949,7 +3287,7 @@ async function renderAdminDashboard(area) {
     document.getElementById('stat-approvals').textContent = pending.pending?.length||0;
     const pendingDiv = document.getElementById('admin-pending');
     if (!pending.pending?.length) {
-      pendingDiv.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text-muted)">✅ Koi pending approval nahi</div>`;
+      pendingDiv.innerHTML=`<div style="text-align:center;padding:20px;color:var(--text-muted)">✅ No pending approvals</div>`;
     } else {
       pendingDiv.innerHTML = pending.pending.slice(0,5).map(u=>`
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -1975,7 +3313,7 @@ async function renderApprovals(area) {
     const data = await apiGet('/faculty/pending');
     const list = document.getElementById('approvals-list');
     if (!data.pending?.length) {
-      list.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">✅</div>Koi pending approval nahi hai!</div>`;
+      list.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)"><i class="fa-solid fa-check-circle" style="font-size:36px;margin-bottom:8px"></i>No pending approvals!</div>`;
       return;
     }
     list.innerHTML = data.pending.map(u=>`
@@ -1991,7 +3329,7 @@ async function renderApprovals(area) {
         </div>
       </div>`).join('');
   } catch(err) {
-    document.getElementById('approvals-list').innerHTML=`<div style="text-align:center;padding:32px;color:var(--danger)">❌ Server se connect nahi ho pa raha</div>`;
+    document.getElementById('approvals-list').innerHTML=`<div style="text-align:center;padding:32px;color:var(--danger)">❌ Cannot connect to server</div>`;
   }
 }
 
@@ -2005,7 +3343,7 @@ async function approveUser(id, name, approve) {
       showToast(`${name} ${approve?'approve':'reject'} kar diya!`,approve?'success':'danger');
       updateApprovalBadge();
       const list=document.getElementById('approvals-list');
-      if(list&&!list.querySelector('[id^="approval-"]')) list.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">✅</div>Sab approve ho gaye!</div>`;
+      if(list&&!list.querySelector('[id^="approval-"]')) list.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">✅</div>All approved!</div>`;
     } else showToast(data.message||'Error','danger');
   } catch(err) { showToast('Server error!','danger'); }
 }
@@ -2018,7 +3356,7 @@ async function renderManageFaculty(area) {
   try {
     const data = await apiGet('/faculty');
     const container = document.getElementById('faculty-container');
-    if (!data.faculty?.length) { container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)">Koi faculty nahi</div>`; return; }
+    if (!data.faculty?.length) { container.innerHTML=`<div style="text-align:center;padding:32px;color:var(--text-muted)">No faculty</div>`; return; }
     container.innerHTML = `
       <div class="table-wrap"><table>
         <thead><tr><th>Faculty</th><th>Email</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
@@ -2039,7 +3377,7 @@ async function renderManageFaculty(area) {
   } catch(e){ document.getElementById('faculty-container').innerHTML=`<div style="color:var(--danger);padding:20px">Error</div>`; }
 }
 
-async function renderManageCourses(area) {
+function renderManageCourses(area) {
   area.innerHTML = `
     <div class="page-header"><h1>Manage Courses</h1></div>
     <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -2050,7 +3388,7 @@ async function renderManageCourses(area) {
     <!-- Add Course Form (hidden by default) -->
     <div id="add-course-form" style="display:none;margin-bottom:20px">
       <div class="card">
-        <div class="card-title" style="margin-bottom:16px">New Course Add Karo</div>
+        <div class="card-title" style="margin-bottom:16px">Add New Course</div>
         <div class="grid grid-2">
           <div class="form-group"><label>Course Name</label><input id="c-name" placeholder="e.g. Machine Learning"></div>
           <div class="form-group"><label>Course Code</label><input id="c-code" placeholder="e.g. CS601"></div>
@@ -2097,6 +3435,208 @@ async function renderManageCourses(area) {
   loadCourses();
 }
 
+// ═══════════ ADMIN: DEPARTMENTS ═══════════
+
+async function renderDepartments(area) {
+  area.innerHTML = `
+    <div class="page-header"><h1>Departments</h1><p>Manage department records</p></div>
+
+    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+      <div class="search-bar" style="flex:1;min-width:220px"><span>🔍</span>
+        <input placeholder="Search departments..." id="dept-search" oninput="filterDepartments()">
+      </div>
+      <button class="btn btn-accent" onclick="showAddDepartmentForm()">+ Add Department</button>
+    </div>
+
+    <div id="add-department-form" style="display:none;margin-bottom:20px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:16px">Add New Department</div>
+        <div class="grid grid-2">
+          <div class="form-group"><label>Department Name</label><input id="d-name" placeholder="e.g. Computer Science"></div>
+          <div class="form-group"><label>Department Code</label><input id="d-code" placeholder="e.g. CS"></div>
+          <div class="form-group"><label>Description</label><input id="d-desc" placeholder="Short description"/></div>
+          <div class="form-group"><label>Head Faculty (Email optional)</label><input id="d-head" placeholder="Faculty name/email/id (optional)"/></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button class="btn btn-accent" onclick="addDepartment()">+ Create</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('add-department-form').style.display='none'">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="departments-container">
+      <div style="text-align:center;padding:32px;color:var(--text-muted)">Loading...</div>
+    </div>`;
+
+  try {
+    const data = await apiGet('/departments');
+    const list = document.getElementById('departments-container');
+    const departments = data.departments || [];
+    window._allDepartments = departments;
+
+    if (!departments.length) {
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">No departments found</div>`;
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th>Code</th>
+              <th>Head</th>
+              <th>Courses</th>
+              <th>Students</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${departments.map(d => `
+              <tr>
+                <td style="font-weight:700;color:var(--text-primary)">${d.name}</td>
+                <td><span class="badge badge-accent" style="font-family:monospace">${d.code || 'N/A'}</span></td>
+                <td>${d.headFaculty?.name || 'N/A'}</td>
+                <td>${d.courses?.length || 0}</td>
+                <td>${d.students?.length || 0}</td>
+                <td>
+                  <div style="display:flex;gap:6px">
+                    <button class="btn btn-ghost btn-sm" onclick="showToast('Edit coming soon','accent')">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteDepartment('${d._id}', '${d.name}')">🗑️</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    const list = document.getElementById('departments-container');
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--danger)">Error loading departments</div>`;
+  }
+}
+
+function showAddDepartmentForm() {
+  const form = document.getElementById('add-department-form');
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function filterDepartments() {
+  const q = document.getElementById('dept-search')?.value?.toLowerCase();
+  const all = window._allDepartments || [];
+  const filtered = all.filter(d =>
+    (d.name || '').toLowerCase().includes(q) ||
+    (d.code || '').toLowerCase().includes(q)
+  );
+
+  const container = document.getElementById('departments-container');
+  if (!container) return;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">No department found</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Code</th>
+            <th>Head</th>
+            <th>Courses</th>
+            <th>Students</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(d => `
+            <tr>
+              <td style="font-weight:700;color:var(--text-primary)">${d.name}</td>
+              <td><span class="badge badge-accent" style="font-family:monospace">${d.code || 'N/A'}</span></td>
+              <td>${d.headFaculty?.name || 'N/A'}</td>
+              <td>${d.courses?.length || 0}</td>
+              <td>${d.students?.length || 0}</td>
+              <td>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-ghost btn-sm" onclick="showToast('Edit coming soon','accent')">✏️</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteDepartment('${d._id}', '${d.name}')">🗑️</button>
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function addDepartment() {
+  const name = document.getElementById('d-name')?.value?.trim();
+  const code = document.getElementById('d-code')?.value?.trim();
+  const description = document.getElementById('d-desc')?.value?.trim();
+  const headFaculty = document.getElementById('d-head')?.value?.trim();
+
+  if (!name || !code) {
+    showToast('Department name aur code bharo','warning');
+    return;
+  }
+
+  const payload = {
+    name,
+    code,
+    description,
+  };
+
+  // Optional: send head faculty identifier if provided (backend supports headFacultyId)
+  if (headFaculty) payload.headFacultyId = headFaculty;
+
+  try {
+    const data = await apiPost('/departments', payload);
+    if (data.success) {
+      showToast('Department created!','success');
+      document.getElementById('add-department-form').style.display = 'none';
+      renderDepartments(document.getElementById('content-area'));
+      // Reset form
+      document.getElementById('d-name').value = '';
+      document.getElementById('d-code').value = '';
+      document.getElementById('d-desc').value = '';
+      document.getElementById('d-head').value = '';
+    } else {
+      showToast(data.message || 'Create failed','danger');
+    }
+  } catch(e) {
+    showToast('Server error','danger');
+  }
+}
+
+async function deleteDepartment(id, name) {
+  if (!confirm(`Delete ${name}?`)) return;
+  try {
+    const data = await apiPut(`/departments/${id}`, { _method: 'DELETE' });
+    // If backend uses DELETE route, prefer direct fetch fallback:
+  } catch (e) {
+    // ignore
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API}/departments/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Department deleted','danger');
+      renderDepartments(document.getElementById('content-area'));
+    } else {
+      showToast(data.message || 'Delete failed','danger');
+    }
+  } catch(e) {
+    showToast('Server error','danger');
+  }
+}
+
+
 async function loadCourses() {
   try {
     const data = await apiGet('/courses');
@@ -2113,9 +3653,9 @@ function renderCoursesTable(courses) {
   if (!courses.length) {
     container.innerHTML = `
       <div style="text-align:center;padding:40px;color:var(--text-muted)">
-        <div style="font-size:48px;margin-bottom:12px">📚</div>
-        <div style="font-weight:600">Koi course nahi hai</div>
-        <div style="font-size:13px;margin-top:8px">+ Add Course button se naya course add karo</div>
+        <i class="fa-solid fa-book" style="font-size:48px;margin-bottom:12px"></i>
+        <div style="font-weight:600">No courses available</div>
+        <div style="font-size:13px;margin-top:8px">Use the Add Course button to create a new course</div>
       </div>`;
     return;
   }
@@ -2187,7 +3727,7 @@ async function addCourse() {
     });
 
     if (data.success) {
-      showToast(`${name} course add ho gaya!`, 'success');
+      showToast(`${name} course added!`, 'success');
       document.getElementById('add-course-form').style.display = 'none';
       loadCourses();
     } else {
@@ -2197,14 +3737,14 @@ async function addCourse() {
 }
 
 async function deleteCourse(id, name) {
-  if (!confirm(`"${name}" course delete karna hai?`)) return;
+  if (!confirm(`Delete "${name}" course?`)) return;
   try {
     const token = localStorage.getItem('token');
     await fetch(`${API}/courses/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    showToast(`${name} delete ho gaya`, 'danger');
+    showToast(`${name} deleted`, 'danger');
     loadCourses();
   } catch(e) { showToast('Error', 'danger'); }
 }
@@ -2378,10 +3918,10 @@ async function renderFinance(area) {
 
     <!-- Add Fee Form -->
     <div class="card" style="margin-bottom:20px">
-      <div class="card-title" style="margin-bottom:16px">Student ko Fee Add karo</div>
+      <div class="card-title" style="margin-bottom:16px">Add Fee to Student</div>
       <div class="grid grid-2">
         <div class="form-group">
-          <label>Student Select karo</label>
+          <label>Select Student</label>
           <select id="fee-student-select" style="width:100%">
             <option value="">Loading students...</option>
           </select>
@@ -2434,21 +3974,35 @@ async function renderFinance(area) {
       <div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>
     </div>`;
 
-  // Students load karo dropdown mein
+  // Load students in dropdown
   try {
     const data = await apiGet('/students');
     const select = document.getElementById('fee-student-select');
-    select.innerHTML = '<option value="">Student select karo</option>';
-    data.students?.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s._id;
-      opt.textContent = `${s.name} (${s.email})`;
-      select.appendChild(opt);
-    });
+    if (!select) return;
 
-    // Stats update karo
-    document.getElementById('total-students').textContent = data.students?.length || 0;
-  } catch(e) {}
+    if (!data.success) {
+      select.innerHTML = '<option value="">Unable to load students</option>';
+      showToast(data.message || 'Unable to load student list', 'danger');
+    } else {
+      select.innerHTML = '<option value="">Select student</option>';
+      if (Array.isArray(data.students) && data.students.length) {
+        data.students.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s._id;
+          opt.textContent = `${s.name} (${s.email})`;
+          select.appendChild(opt);
+        });
+      } else {
+        select.innerHTML = '<option value="">No approved students found</option>';
+      }
+      document.getElementById('total-students').textContent = (data.students || []).length;
+    }
+  } catch(e) {
+    const select = document.getElementById('fee-student-select');
+    if (select) select.innerHTML = '<option value="">Error loading students</option>';
+    showToast('Unable to load students. Check your backend connection.', 'danger');
+    console.error('Finance student load error:', e);
+  }
 
   loadAllTransactions();
 }
@@ -2461,7 +4015,7 @@ async function addFeeForStudent() {
   const desc       = document.getElementById('fee-desc')?.value?.trim();
   const semester   = document.getElementById('fee-semester')?.value;
 
-  if (!studentId) { showToast('Student select karo', 'warning'); return; }
+  if (!studentId) { showToast('Select student', 'warning'); return; }
   if (!amount)    { showToast('Amount daalo', 'warning'); return; }
   if (!desc)      { showToast('Description daalo', 'warning'); return; }
 
@@ -2471,57 +4025,83 @@ async function addFeeForStudent() {
       description: desc,
       amount: Number(amount),
       type,
-      dueDate: dueDate || new Date().toISOString(),
+      dueDate: dueDate ? new Date(dueDate).toISOString() : new Date().toISOString(),
       semester: Number(semester),
       status: 'pending'
     });
 
     if (data.success) {
-      showToast('Fee add ho gayi!', 'success');
-      // Form clear karo
+      showToast('Fee added!', 'success');
       document.getElementById('fee-amount').value = '';
       document.getElementById('fee-desc').value   = '';
+      document.getElementById('fee-student-select').selectedIndex = 0;
       loadAllTransactions();
     } else {
-      showToast(data.message || 'Error', 'danger');
+      console.error('Add fee failed:', data);
+      showToast(data.message || 'Something went wrong while adding the fee', 'danger');
     }
-  } catch(e) { showToast('Server error', 'danger'); }
+  } catch(e) {
+    console.error('Add fee error:', e);
+    showToast('Server error while adding fee', 'danger');
+  }
 }
 
 async function loadAllTransactions() {
+  const container = document.getElementById('finance-transactions');
+  if (!container) return;
+
   try {
-    const students = await apiGet('/students');
-    const container = document.getElementById('finance-transactions');
-    if (!container) return;
+    const studentsData = await apiGet('/students');
+    if (!studentsData.success) {
+      throw new Error(studentsData.message || 'Failed to load students');
+    }
+
+    const students = Array.isArray(studentsData.students) ? studentsData.students : [];
+    if (!students.length) {
+      container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">
+        <i class="fa-solid fa-user-graduate" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
+        <div>No approved students found</div>
+      </div>`;
+      document.getElementById('total-collected').textContent = '₹0';
+      document.getElementById('total-pending').textContent = '₹0';
+      document.getElementById('total-defaulters').textContent = '0';
+      return;
+    }
 
     let allFees = [];
     let totalCollected = 0, totalPending = 0, defaulters = new Set();
 
-    for (const s of (students.students || [])) {
+    for (const s of students) {
       try {
         const feeData = await apiGet(`/fees/student/${s._id}`);
-        if (feeData.fees?.length > 0) {
+        if (!feeData.success) {
+          console.warn('Failed to load fee data for', s._id, feeData.message);
+          continue;
+        }
+        if (Array.isArray(feeData.fees) && feeData.fees.length > 0) {
           feeData.fees.forEach(f => {
             allFees.push({ ...f, studentName: s.name });
-            if (f.status === 'paid')    totalCollected += f.amount;
+            if (f.status === 'paid') totalCollected += f.amount;
             if (f.status === 'pending') { totalPending += f.amount; defaulters.add(s._id); }
           });
         }
-      } catch(e) {}
+      } catch(e) {
+        console.warn('Fee load error for student', s._id, e);
+      }
     }
 
-    // Stats update karo
+    // Update stats
     const collEl = document.getElementById('total-collected');
-    const pendEl  = document.getElementById('total-pending');
-    const defEl   = document.getElementById('total-defaulters');
+    const pendEl = document.getElementById('total-pending');
+    const defEl  = document.getElementById('total-defaulters');
     if (collEl) collEl.textContent = '₹' + (totalCollected/1000).toFixed(0) + 'K';
-    if (pendEl)  pendEl.textContent  = '₹' + (totalPending/1000).toFixed(0)  + 'K';
-    if (defEl)   defEl.textContent   = defaulters.size;
+    if (pendEl) pendEl.textContent  = '₹' + (totalPending/1000).toFixed(0)  + 'K';
+    if (defEl)  defEl.textContent   = defaulters.size;
 
     if (!allFees.length) {
       container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted)">
         <i class="fa-solid fa-coins" style="font-size:40px;margin-bottom:12px;opacity:.3"></i>
-        <div>Koi transaction nahi hai — Admin se fees add karwao</div>
+        <div>No transactions — Ask admin to add fees</div>
       </div>`;
       return;
     }
@@ -2557,25 +4137,171 @@ async function markFeePaid(feeId) {
       paymentMethod: 'Manual (Admin)'
     });
     if (data.success) {
-      showToast('Fee paid mark ho gayi!', 'success');
+      showToast('Fee marked as paid!', 'success');
       loadAllTransactions();
     }
   } catch(e) { showToast('Error', 'danger'); }
 }
 
-function renderReports(area) {
+async function renderReports(area) {
   area.innerHTML = `
-    <div class="page-header"><h1>Reports</h1></div>
+    <div class="page-header"><h1>Reports</h1><p>Generate and download</p></div>
     <div class="grid grid-2">
-      ${[{icon:'📊',title:'Academic Performance',desc:'CGPA, marks, grade distribution'},{icon:'✅',title:'Attendance Report',desc:'Subject-wise summary'},{icon:'💰',title:'Fee Collection',desc:'Monthly collection data'},{icon:'👥',title:'Enrollment Report',desc:'Department-wise data'}].map(r=>`
+      ${[
+        {icon:'fa-chart-bar', title:'Academic Performance', desc:'CGPA, marks, grade distribution', fn:'generateAcademicReport'},
+        {icon:'fa-clipboard-check', title:'Attendance Report', desc:'Subject-wise attendance summary', fn:'generateAttendanceReport'},
+        {icon:'fa-coins', title:'Fee Collection', desc:'Monthly collection aur defaulters', fn:'generateFeeReport'},
+        {icon:'fa-users', title:'Student Enrollment', desc:'Department-wise enrollment data', fn:'generateEnrollmentReport'},
+      ].map(r=>`
         <div class="card" style="display:flex;gap:14px;align-items:center">
-          <div style="font-size:32px">${r.icon}</div>
-          <div style="flex:1"><div style="font-weight:700;font-size:14px">${r.title}</div><div style="font-size:12px;color:var(--text-muted);margin-top:4px">${r.desc}</div></div>
-          <button class="btn btn-accent btn-sm" onclick="showToast('Generating...','success')">Generate</button>
+          <div style="width:50px;height:50px;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fa-solid ${r.icon}" style="font-size:20px;color:var(--accent)"></i>
+          </div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:14px">${r.title}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${r.desc}</div>
+          </div>
+          <button class="btn btn-accent btn-sm" onclick="${r.fn}()">
+            <i class="fa-solid fa-download"></i> Generate
+          </button>
         </div>`).join('')}
     </div>`;
 }
 
+async function generateAcademicReport() {
+  showToast('Generating Academic Report...','accent');
+  try {
+    const students = await apiGet('/students');
+    let reportHTML = `
+      <html><head><title>Academic Report</title>
+      <style>body{font-family:Arial;max-width:800px;margin:40px auto;color:#333}
+      table{width:100%;border-collapse:collapse;margin:20px 0}
+      th,td{padding:10px;border:1px solid #ddd;text-align:left}
+      th{background:#4f6ef7;color:white}h1{color:#4f6ef7}</style></head><body>
+      <h1>KD Campus — Academic Report</h1>
+      <p>Generated: ${new Date().toLocaleDateString('en-IN')}</p>
+      <h2>Students (${students.students?.length||0})</h2>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Status</th></tr></thead><tbody>
+      ${students.students?.map(s=>`<tr><td>${s.name}</td><td>${s.email}</td><td>${s.department||'N/A'}</td><td>${s.isApproved?'Active':'Pending'}</td></tr>`).join('')||''}
+      </tbody></table></body></html>`;
+
+    const blob = new Blob([reportHTML], {type:'text/html'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `Academic_Report_${Date.now()}.html`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('Report downloaded!','success');
+  } catch(e) { showToast('Error generating report','danger'); }
+}
+
+async function generateEnrollmentReport() {
+  showToast('Generating Enrollment Report...','accent');
+  try {
+    const [students, courses] = await Promise.all([apiGet('/students'), apiGet('/courses')]);
+    const deptCount = {};
+    students.students?.forEach(s => { deptCount[s.department||'Unknown'] = (deptCount[s.department||'Unknown']||0)+1; });
+
+    let reportHTML = `
+      <html><head><title>Enrollment Report</title>
+      <style>body{font-family:Arial;max-width:800px;margin:40px auto;color:#333}
+      table{width:100%;border-collapse:collapse;margin:20px 0}
+      th,td{padding:10px;border:1px solid #ddd;text-align:left}
+      th{background:#4f6ef7;color:white}h1{color:#4f6ef7}</style></head><body>
+      <h1>KD Campus — Enrollment Report</h1>
+      <p>Generated: ${new Date().toLocaleDateString('en-IN')}</p>
+      <h2>Department-wise Enrollment</h2>
+      <table><thead><tr><th>Department</th><th>Students</th></tr></thead><tbody>
+      ${Object.entries(deptCount).map(([d,c])=>`<tr><td>${d}</td><td>${c}</td></tr>`).join('')}
+      </tbody></table>
+      <h2>Available Courses (${courses.courses?.length||0})</h2>
+      <table><thead><tr><th>Course</th><th>Code</th><th>Department</th><th>Credits</th></tr></thead><tbody>
+      ${courses.courses?.map(c=>`<tr><td>${c.name}</td><td>${c.code}</td><td>${c.department||'N/A'}</td><td>${c.credits||4}</td></tr>`).join('')||''}
+      </tbody></table></body></html>`;
+
+    const blob=new Blob([reportHTML],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`Enrollment_Report_${Date.now()}.html`;
+    a.click();URL.revokeObjectURL(url);
+    showToast('Report downloaded!','success');
+  } catch(e) { showToast('Error generating report','danger'); }
+}
+
+async function generateAttendanceReport() {
+  showToast('Generating Attendance Report...','accent');
+  try {
+    const students = await apiGet('/students');
+    let rows = '';
+    for (const s of (students.students||[]).slice(0,20)) {
+      try {
+        const att = await apiGet(`/attendance/student/${s._id}`);
+        const avg = att.attendance?.length > 0
+          ? Math.round(att.attendance.reduce((sum,a)=>sum+a.pct,0)/att.attendance.length)
+          : 'N/A';
+        rows += `<tr><td>${s.name}</td><td>${s.department||'N/A'}</td><td>${avg}%</td><td>${avg>=75?'✅ Eligible':'❌ Short'}</td></tr>`;
+      } catch(e) { rows += `<tr><td>${s.name}</td><td>${s.department||'N/A'}</td><td>N/A</td><td>N/A</td></tr>`; }
+    }
+
+    const reportHTML = `
+      <html><head><title>Attendance Report</title>
+      <style>body{font-family:Arial;max-width:800px;margin:40px auto;color:#333}
+      table{width:100%;border-collapse:collapse;margin:20px 0}
+      th,td{padding:10px;border:1px solid #ddd;text-align:left}
+      th{background:#4f6ef7;color:white}h1{color:#4f6ef7}</style></head><body>
+      <h1>KD Campus — Attendance Report</h1>
+      <p>Generated: ${new Date().toLocaleDateString('en-IN')} | Min Required: 75%</p>
+      <table><thead><tr><th>Student</th><th>Department</th><th>Avg Attendance</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody></table></body></html>`;
+
+    const blob=new Blob([reportHTML],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`Attendance_Report_${Date.now()}.html`;
+    a.click();URL.revokeObjectURL(url);
+    showToast('Report downloaded!','success');
+  } catch(e) { showToast('Error','danger'); }
+}
+
+async function generateFeeReport() {
+  showToast('Generating Fee Report...','accent');
+  try {
+    const students = await apiGet('/students');
+    let rows='', totalCollected=0, totalPending=0;
+
+    for (const s of (students.students||[]).slice(0,20)) {
+      try {
+        const feeData = await apiGet(`/fees/student/${s._id}`);
+        const paid    = feeData.summary?.paid    || 0;
+        const pending = feeData.summary?.pending || 0;
+        totalCollected += paid; totalPending += pending;
+        rows += `<tr><td>${s.name}</td><td>₹${paid.toLocaleString('en-IN')}</td><td>₹${pending.toLocaleString('en-IN')}</td><td>${pending>0?'⚠️ Pending':'✅ Clear'}</td></tr>`;
+      } catch(e) { rows += `<tr><td>${s.name}</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>`; }
+    }
+
+    const reportHTML = `
+      <html><head><title>Fee Report</title>
+      <style>body{font-family:Arial;max-width:800px;margin:40px auto;color:#333}
+      table{width:100%;border-collapse:collapse;margin:20px 0}
+      th,td{padding:10px;border:1px solid #ddd;text-align:left}
+      th{background:#4f6ef7;color:white}h1{color:#4f6ef7}
+      .summary{background:#f0f4ff;padding:16px;border-radius:8px;margin:20px 0}</style></head><body>
+      <h1>KD Campus — Fee Collection Report</h1>
+      <p>Generated: ${new Date().toLocaleDateString('en-IN')}</p>
+      <div class="summary">
+        <strong>Total Collected: ₹${totalCollected.toLocaleString('en-IN')}</strong> &nbsp;|&nbsp;
+        <strong>Total Pending: ₹${totalPending.toLocaleString('en-IN')}</strong>
+      </div>
+      <table><thead><tr><th>Student</th><th>Paid</th><th>Pending</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody></table></body></html>`;
+
+    const blob=new Blob([reportHTML],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`Fee_Report_${Date.now()}.html`;
+    a.click();URL.revokeObjectURL(url);
+    showToast('Report downloaded!','success');
+  } catch(e) { showToast('Error','danger'); }
+}
 function renderSettings(area) {
   area.innerHTML = `
     <div class="page-header"><h1>System Settings</h1></div>
@@ -2645,7 +4371,7 @@ async function renderFees(area) {
       <div style="position:relative;z-index:1">
         <div style="font-size:13px;opacity:.8;margin-bottom:4px">Total Fee Due</div>
         <div style="font-size:36px;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:8px">₹${pendingAmount>0?pendingAmount.toLocaleString('en-IN'):'0'}</div>
-        <div style="font-size:13px;opacity:.7;margin-bottom:20px">${pendingAmount>0?'Fee pending hai':'Koi pending fee nahi hai'}</div>
+        <div style="font-size:13px;opacity:.7;margin-bottom:20px">${pendingAmount>0?'Fee pending':'No pending fee'}</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
           ${pendingAmount>0?`<button class="btn" style="background:white;color:var(--accent);font-weight:700;padding:12px 24px" onclick="initiatePayment(${pendingAmount},'Pending Fee')">💳 Pay Now</button>`:''}
           <button class="btn" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)" onclick="showEMIOptions()">📅 Pay in EMI</button>
@@ -2667,7 +4393,7 @@ async function renderFees(area) {
     <div class="card">
       <div class="card-header"><div class="card-title">Payment History</div></div>
       ${allPayments.length===0
-        ?`<div style="text-align:center;padding:32px;color:var(--text-muted)">Koi payment history nahi hai</div>`
+        ?`<div style="text-align:center;padding:32px;color:var(--text-muted)">No payment history</div>`
         :`<div class="table-wrap"><table>
             <thead><tr><th>Transaction ID</th><th>Description</th><th>Amount</th><th>Date</th><th>Status</th><th>Receipt</th></tr></thead>
             <tbody>
@@ -2797,7 +4523,7 @@ function downloadMarksheet(){
       }
     }catch(e){}
     doc.save(`Marksheet_${(user.name||'Student').replace(' ','_')}.pdf`);
-    showToast('Marksheet PDF download ho rahi hai!','success');
+    showToast('Marksheet PDF is downloading!','success');
   });
 }
 
@@ -2893,46 +4619,104 @@ function renderCertificates(area){
     </div>`;
 }
 
-// ═══════════ AI CHATBOT ═══════════
+// ═══════════ AI CHATBOT ═════════════════
 
-const chatResponses={
-  'fee':'Fee payment ke liye Fee Payment section mein jaao — UPI, Cards, Net Banking se pay kar sakte ho.',
-  'attendance':'Attendance check karne ke liye Attendance section mein jaao.',
-  'assignment':'Assignments section mein jaao apne assignments dekhne ke liye.',
-  'result':'Results & Marks section mein jaao apne marks dekhne ke liye.',
-  'hello':'Hello! 👋 Main UniBot hoon. Fees, attendance, assignments, results — kuch bhi poocho!',
-  'hi':'Hi! 😊 Kaise help kar sakta hoon?',
-  'help':'Main in topics pe help kar sakta hoon:\n• 💰 Fee payment\n• ✅ Attendance\n• 📝 Assignments\n• 📊 Results\n• 🚌 Bus tracking\n• 🏆 Placement',
-};
+const chatIntents = [
+  {pattern:/\b(hi|hello|hey|namaste|good morning|good afternoon|good evening)\b/i, replies:['Hello! I am UniBot — your university assistant. How can I help you today?','Hi there! Ask me about fees, attendance, assignments, results, timetable, or campus services.']},
+  {pattern:/\b(help|support|assist|sahayata|madad)\b/i, replies:['I can help you with fees, attendance, assignments, results, timetable, bus service, placements, announcements and more. Just ask!','Ask me about fee payment, attendance records, assignments, results, timetable, bus tracking, or announcements.']},
+  {pattern:/\b(fee|payment|pay|tuition|due)\b/i, replies:['For fee payment, open the Fee Payment section in the app. You can pay with UPI, cards or net banking. If you need a receipt, the payment history is available there.','Check the Fee Payment page to view pending payments and pay using UPI, card, or net banking.']},
+  {pattern:/\b(attendance|present|absent|attendance record|attendance status)\b/i, replies:['You can view your attendance in the Attendance section. It shows your present, absent, and overall percentage.','Attendance information is available under the Attendance page. Open it to see your daily and monthly records.']},
+  {pattern:/\b(assignments|homework|task|submit|assignment)\b/i, replies:['For assignments, go to the Assignments page. There you can view all active tasks and due dates.','Open the Assignments section to see your pending assignments, deadlines, and submission details.']},
+  {pattern:/\b(result|marks|grades|score|percentage)\b/i, replies:['See your Results & Marks page to check subject-wise scores and grades.','Open Results & Marks to review your latest exam performance and grades.']},
+  {pattern:/\b(timetable|schedule|period|class schedule|class time)\b/i, replies:['Your timetable is available under the Timetable section. It shows the weekly class schedule and timings.','Visit the Timetable page to view your current week schedule.']},
+  {pattern:/\b(library|books|digital library|resources)\b/i, replies:['The Digital Library section has study materials and course resources. Check it for notes and e-books.','Open the Digital Library to access notes, resources, and uploaded study material.']},
+  {pattern:/\b(placement|internship|job|career)\b/i, replies:['The Placement Portal has company drives, eligibility, and application details. See it for placement announcements.','Check the Placement Portal for placement updates, internship drives, and company information.']},
+  {pattern:/\b(notification|notice|announcement|alert)\b/i, replies:['Announcements are shown in the Notifications panel and the Announcements page. Use the bell icon to open them.','Open the Notifications or Announcements section to see the latest college notices.']},
+  {pattern:/\b(course|subject|enroll|register|class)\b/i, replies:['Your courses appear in My Courses. You can enroll or view course details there.','Visit My Courses to see enrolled subjects, course details, and schedules.']},
+  {pattern:/\b(bus|transport|bus tracker|shuttle)\b/i, replies:['The Bus Tracker page shows live bus status and campus route details.','Open Bus Tracker to see campus transport timings and bus locations.']},
+  {pattern:/\b(campus map|map|location|campus)\b/i, replies:['Campus Map shows the campus layout and important locations. Check it for directions.','Use the Campus Map page to find buildings, labs, and campus facilities.']},
+  {pattern:/\b(profile|my profile|account|details)\b/i, replies:['Your profile is accessible from the top-right avatar menu. It shows your name, role, and department.','Open the profile panel using the avatar icon to view your account details.']},
+  {pattern:/\b(log ?in|sign ?in|register|sign ?up|password)\b/i, replies:['Use the Sign In / Register form to access your account. Enter your email, phone and password to continue.','If you do not have an account, use the Register tab. Otherwise sign in with your existing credentials.']},
+  {pattern:/\b(holiday|vacation|break|exam schedule|exam)\b/i, replies:['Exam schedules and holiday notices appear in Announcements. Check the Announcements page for the latest updates.','See Announcements for exam dates, holidays, and important academic notices.']},
+];
 
 function toggleChat(){
   chatOpen=!chatOpen;
   document.getElementById('chatbot-window').classList.toggle('open',chatOpen);
-  document.getElementById('chat-fab-icon').textContent=chatOpen?'×':'🤖';
+  document.getElementById('chat-fab-icon').innerHTML = chatOpen ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-robot"></i>';
+  if(chatOpen){
+    const messages=document.getElementById('chat-messages');
+    if(messages && messages.children.length===1 && messages.textContent.includes('Hi!')) return;
+    if(messages && messages.children.length===0){
+      messages.innerHTML = `<div class="chat-msg bot"><div class="msg-bubble">Hello! I’m UniBot — your university assistant. Ask me about fees, attendance, assignments, results, timetable, or campus services.</div></div>`;
+      messages.scrollTop = messages.scrollHeight;
+    }
+  }
+}
+
+function formatReply(reply){
+  return reply.replace(/\n/g,'<br>');
+}
+
+function findChatReply(message){
+  const text = message.trim().toLowerCase();
+  for(const intent of chatIntents){
+    if(intent.pattern.test(text)){
+      const reply = intent.replies[Math.floor(Math.random()*intent.replies.length)];
+      return reply;
+    }
+  }
+  return null;
+}
+
+async function getRemoteChatReply(message){
+  try {
+    const user = getUser();
+    const response = await fetch(`${API}/chatbot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        userRole: user.role || 'guest',
+        userName: user.name || '',
+        userEmail: user.email || ''
+      })
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      console.warn('Chatbot backend error:', data.message || response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.success ? data.reply : null;
+  } catch (err) {
+    console.warn('Remote chatbot unavailable:', err);
+    return null;
+  }
 }
 
 async function sendChat(){
   const input=document.getElementById('chat-input');
-  const msg=input.value.trim();if(!msg)return;input.value='';
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value='';
   const messages=document.getElementById('chat-messages');
-  messages.innerHTML+=`<div class="chat-msg user"><div class="msg-bubble">${msg}</div></div>`;
-  const typingId='typing-'+Date.now();
-  messages.innerHTML+=`<div class="chat-msg bot" id="${typingId}"><div class="msg-bubble typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
-  messages.scrollTop=messages.scrollHeight;
-  const key=Object.keys(chatResponses).find(k=>msg.toLowerCase().includes(k));
-  setTimeout(async()=>{
+  messages.innerHTML += `<div class="chat-msg user"><div class="msg-bubble">${msg}</div></div>`;
+  const typingId = 'typing-'+Date.now();
+  messages.innerHTML += `<div class="chat-msg bot" id="${typingId}"><div class="msg-bubble typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  const remoteReply = await getRemoteChatReply(msg);
+  const fallbackReply = findChatReply(msg) || 'Sorry, I did not understand that. I can help with fees, attendance, assignments, results, timetable, notifications, announcements, courses, and campus services.';
+  const reply = remoteReply || fallbackReply;
+
+  setTimeout(() => {
     document.getElementById(typingId)?.remove();
-    let reply='';
-    if(key){reply=chatResponses[key];}
-    else{
-      try{
-        const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'You are UniBot, a helpful AI assistant for KD Campus University. Help students with courses, fees, attendance, assignments, results, placements. Be concise and friendly.',messages:[{role:'user',content:msg}]})});
-        const data=await response.json();reply=data.content?.[0]?.text||"Fees, attendance, assignments ke baare mein poocho!";
-      }catch(e){reply="Server busy hai. Thodi der baad try karo!";}
-    }
-    messages.innerHTML+=`<div class="chat-msg bot"><div class="msg-bubble">${reply.replace(/\n/g,'<br>')}</div></div>`;
-    messages.scrollTop=messages.scrollHeight;
-  },1200);
+    messages.innerHTML += `<div class="chat-msg bot"><div class="msg-bubble">${formatReply(reply)}</div></div>`;
+    messages.scrollTop = messages.scrollHeight;
+  }, 900);
 }
 
 // ═══════════ NOTIFICATIONS ═══════════
@@ -2941,11 +4725,11 @@ let notifHistory=JSON.parse(localStorage.getItem('notifHistory')||'[]');
 let notifSettings=JSON.parse(localStorage.getItem('notifSettings')||JSON.stringify({assignments:true,results:true,fees:true,announcements:true,library:true}));
 
 async function requestNotificationPermission(){
-  if(!('Notification'in window)){showToast('Browser notifications support nahi karta','danger');return false;}
+  if(!('Notification'in window)){showToast('Browser does not support notifications','danger');return false;}
   if(Notification.permission==='granted'){showToast('Already enabled!','success');return true;}
-  if(Notification.permission==='denied'){showToast('Browser settings se allow karo','warning');return false;}
+  if(Notification.permission==='denied'){showToast('Allow in browser settings','warning');return false;}
   const permission=await Notification.requestPermission();
-  if(permission==='granted'){showToast('Notifications enable ho gayi!','success');sendBrowserNotification('KD Campus Notifications ON!','Ab aapko reminders milenge.','🔔');return true;}
+  if(permission==='granted'){showToast('Notifications enabled!','success');sendBrowserNotification('KD Campus Notifications ON!','You will now receive reminders.','🔔');return true;}
   return false;
 }
 
@@ -2991,7 +4775,7 @@ function renderNotificationCenter(area){
 }
 
 function renderNotifHistory(){
-  if(!notifHistory.length)return`<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">🔔</div>Koi notification nahi</div>`;
+  if(!notifHistory.length)return`<div style="text-align:center;padding:32px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">🔔</div>No notifications</div>`;
   return notifHistory.slice(0,20).map(n=>`<div class="notif-item ${n.read?'':'unread'}"><div class="notif-icon">${n.icon}</div><div style="flex:1"><div class="notif-title">${n.title}</div><div style="font-size:12px;color:var(--text-muted)">${n.body}</div><div class="notif-time">${n.time}</div></div>${!n.read?`<span class="badge badge-accent">New</span>`:''}</div>`).join('');
 }
 
@@ -3019,12 +4803,12 @@ function testAllNotifications(){
   ['📝 Assignment Due!','📊 Result Published!','💰 Fee Reminder!'].forEach((t,i)=>{
     setTimeout(()=>{sendBrowserNotification(t,'Test notification from KD Campus','📢');addToNotifHistory(t,'Test','📢');},i*2000);
   });
-  showToast('3 test notifications bhej rahe hain!','success');
+  showToast('Sending 3 test notifications!','success');
 }
 
 function startAutoNotifications(){
   if(Notification.permission!=='granted')return;
-  setTimeout(()=>{sendBrowserNotification('👋 Welcome to KD Campus!','Dashboard check karo.','🏫');addToNotifHistory('Welcome!','Dashboard check karo','🏫');},5000);
+  setTimeout(()=>{sendBrowserNotification('👋 Welcome to KD Campus!','Check dashboard.','🏫');addToNotifHistory('Welcome!','Check dashboard','🏫');},5000);
 }
 
 // ═══════════ UTILITY ═══════════
@@ -3033,14 +4817,19 @@ function toggleSidebar(){document.getElementById('sidebar').classList.toggle('op
 
 function toggleTheme(){
   const html=document.documentElement,isDark=html.dataset.theme==='dark';
+  html.classList.add('theme-transition');
   html.dataset.theme=isDark?'light':'dark';
   document.getElementById('theme-icon').textContent=isDark?'🌙':'☀️';
   document.getElementById('theme-label').textContent=isDark?'Dark Mode':'Light Mode';
+  window.setTimeout(() => html.classList.remove('theme-transition'), 420);
 }
 
 function showPanel(type){
   document.getElementById('overlay').classList.add('active');
-  if(type==='notifications')document.getElementById('notifications-panel').classList.add('open');
+  if(type==='notifications'){
+    document.getElementById('notifications-panel').classList.add('open');
+    loadNotificationsPanel().then(() => updateNotificationBadge(0));
+  }
 }
 
 function closePanel(){
@@ -3049,6 +4838,67 @@ function closePanel(){
 }
 
 function closeAllPanels(){closePanel();}
+
+function updateNotificationBadge(count) {
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+async function updateNotificationBadgeOnLoad() {
+  try {
+    const data = await apiGet('/announcements');
+    const count = data.notices?.length || 0;
+    updateNotificationBadge(count);
+  } catch (err) {
+    updateNotificationBadge(0);
+  }
+}
+
+async function loadNotificationsPanel() {
+  const content = document.getElementById('notifications-content');
+  if (!content) return;
+  
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</div>';
+  
+  try {
+    const data = await apiGet('/announcements');
+    const count = data.notices?.length || 0;
+    updateNotificationBadge(count);
+    
+    if (!data.notices?.length) {
+      content.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted)">No notifications</div>';
+      return;
+    }
+    
+    const typeIcons = { 
+      general: '<i class="fa-solid fa-bullhorn"></i>', 
+      exam: '<i class="fa-solid fa-file-pen"></i>', 
+      holiday: '<i class="fa-solid fa-calendar-days"></i>', 
+      event: '<i class="fa-solid fa-calendar-check"></i>', 
+      fee: '<i class="fa-solid fa-indian-rupee-sign"></i>' 
+    };
+    
+    content.innerHTML = data.notices.slice(0, 10).map(n => `
+      <div class="notif-item">
+        <div class="notif-icon">${typeIcons[n.type] || '<i class="fa-solid fa-bell"></i>'}</div>
+        <div>
+          <div class="notif-title">${n.title}</div>
+          <div class="notif-time">${n.postedBy?.name || 'Admin'} · ${new Date(n.createdAt).toLocaleDateString('en-IN')}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    content.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted)">Failed to load notifications</div>';
+    updateNotificationBadge(0);
+  }
+}
 
 function showToast(msg,type='accent'){
   const colors={success:'var(--success)',danger:'var(--danger)',warning:'var(--warning)',accent:'var(--accent)'};
@@ -3081,14 +4931,15 @@ function sendChatRoom(){
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('otp-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleLogin();
+    if (e.key === 'Enter') handleOTPLogin();
+
   });
   document.getElementById('chat-input')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') sendChat();
   });
   console.log('%c KD Campus University Management System', 'font-size:16px;font-weight:bold;color:#4f6ef7');
 
-  // ← YEH ADD KARO
+  // ← ADD THIS
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then(() => console.log('✅ Service Worker registered!'))
@@ -3134,7 +4985,7 @@ function showStudentProfile(id, name, email, dept) {
 
 async function renderFaceAttendance(area) {
   area.innerHTML = `
-    <div class="page-header"><h1>Face Recognition Attendance</h1><p>Camera se automatic attendance</p></div>
+    <div class="page-header"><h1>Face Recognition Attendance</h1><p>Automatic attendance via camera</p></div>
 
     <div class="grid grid-2">
       <div class="card">
@@ -3154,7 +5005,7 @@ async function renderFaceAttendance(area) {
           </button>
         </div>
         <div id="face-status" style="margin-top:12px;padding:10px;border-radius:8px;background:var(--bg-input);font-size:13px;color:var(--text-muted);text-align:center">
-          Camera start karo
+          Select course and start the camera
         </div>
       </div>
 
@@ -3163,15 +5014,27 @@ async function renderFaceAttendance(area) {
           <i class="fa-solid fa-clipboard-check"></i> Attendance Log
         </div>
         <div class="form-group">
-          <label>Course Select karo</label>
-          <select id="face-course-select" style="width:100%">
+          <label>Select Course</label>
+          <select id="face-course-select" style="width:100%" onchange="loadFaceAttendanceData(this.value)">
             <option value="">Loading...</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>Register Student Face</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <select id="face-student-select" style="flex:1;min-width:180px">
+              <option value="">Select student</option>
+            </select>
+            <button class="btn btn-ghost" style="white-space:nowrap" onclick="registerStudentFace()">
+              <i class="fa-solid fa-user-plus"></i> Register
+            </button>
+          </div>
+          <div id="face-register-status" style="margin-top:10px;font-size:12px;color:var(--text-muted)">Register one student face template before saving attendance.</div>
         </div>
         <div id="face-attendance-log" style="max-height:300px;overflow-y:auto">
           <div style="text-align:center;padding:20px;color:var(--text-muted)">
             <i class="fa-solid fa-users" style="font-size:32px;margin-bottom:8px;opacity:.3"></i>
-            <div>Camera start hone pe detected faces yahan dikhenge</div>
+            <div>Start the camera and select the course to enable recognition.</div>
           </div>
         </div>
         <button class="btn btn-success" style="width:100%;margin-top:12px" onclick="saveFaceAttendance()">
@@ -3181,12 +5044,12 @@ async function renderFaceAttendance(area) {
     </div>
 
     <div class="card" style="margin-top:16px">
-      <div class="card-title" style="margin-bottom:12px">ℹ️ Face Recognition kaise kaam karta hai</div>
+      <div class="card-title" style="margin-bottom:12px">How Face Recognition Works</div>
       <div class="grid grid-3">
         ${[
-          {icon:'fa-camera',title:'Camera On karo',desc:'Browser camera permission do'},
-          {icon:'fa-face-smile',title:'Face Detect hoga',desc:'AI automatically faces detect karega'},
-          {icon:'fa-check',title:'Attendance Save karo',desc:'Detected students ki attendance mark ho jaayegi'},
+          {icon:'fa-camera',title:'Start Camera',desc:'Allow browser camera access.'},
+          {icon:'fa-user-check',title:'Register Faces',desc:'Capture face templates for students.'},
+          {icon:'fa-check-circle',title:'Auto Attendance',desc:'Recognize matched faces and save attendance.'},
         ].map(s=>`
           <div style="text-align:center;padding:16px;background:var(--bg-input);border-radius:10px">
             <i class="fa-solid ${s.icon}" style="font-size:24px;color:var(--accent);margin-bottom:8px"></i>
@@ -3196,11 +5059,11 @@ async function renderFaceAttendance(area) {
       </div>
     </div>`;
 
-  // Courses load karo
+  // Load courses
   try {
     const data   = await apiGet('/courses');
     const select = document.getElementById('face-course-select');
-    select.innerHTML = '<option value="">Course select karo</option>';
+    select.innerHTML = '<option value="">Select course</option>';
     data.courses?.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c._id; opt.textContent = `${c.name} (${c.code})`;
@@ -3208,36 +5071,145 @@ async function renderFaceAttendance(area) {
     });
   } catch(e) {}
 
-  // Face-api models load karo
+  // Load face-api models
   loadFaceModels();
 }
 
 let faceStream        = null;
 let faceDetectionLoop = null;
 let detectedStudents  = new Set();
+let knownStudents     = [];
+let faceMatcher       = null;
+let currentFaceCourseId = null;
 
 async function loadFaceModels() {
   try {
     const status = document.getElementById('face-status');
-    if (status) status.textContent = 'AI Models load ho rahe hain...';
+    if (status) status.textContent = 'Loading AI models...';
 
     const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
     ]);
 
     if (status) {
-      status.textContent = '✅ AI Models ready! Camera start karo.';
+      status.textContent = '✅ AI models ready. Start the camera.';
       status.style.color = 'var(--success)';
     }
   } catch(e) {
     const status = document.getElementById('face-status');
     if (status) {
-      status.textContent = '⚠️ Models load nahi hue — internet check karo';
+      status.textContent = 'Models failed to load. Check internet or refresh.';
       status.style.color = 'var(--warning)';
     }
+  }
+}
+
+async function loadFaceAttendanceData(courseId) {
+  currentFaceCourseId = courseId;
+  const status = document.getElementById('face-status');
+  if (status) {
+    status.textContent = courseId ? 'Loading student face templates...' : 'Select a course to load registered students.';
+    status.style.color = courseId ? 'var(--accent)' : 'var(--text-muted)';
+  }
+
+  if (!courseId) {
+    knownStudents = [];
+    faceMatcher   = null;
+    populateFaceStudentSelect([]);
+    updateFaceLog([]);
+    return;
+  }
+
+  try {
+    const data = await apiGet(`/students/faces?courseId=${courseId}`);
+    knownStudents = data.students || [];
+    window._faceCourseStudents = knownStudents;
+    populateFaceStudentSelect(knownStudents);
+
+    const labeledDescriptors = knownStudents
+      .filter(s => s.faceDescriptors?.length)
+      .map(s => new faceapi.LabeledFaceDescriptors(
+        s._id,
+        s.faceDescriptors.map(desc => new Float32Array(desc))
+      ));
+
+    faceMatcher = labeledDescriptors.length ? new faceapi.FaceMatcher(labeledDescriptors, 0.5) : null;
+
+    if (status) {
+      status.textContent = labeledDescriptors.length
+        ? `Loaded ${labeledDescriptors.length} registered face template(s)`
+        : 'No registered face templates for this course yet. Register student faces to enable recognition.';
+      status.style.color = labeledDescriptors.length ? 'var(--success)' : 'var(--warning)';
+    }
+  } catch (err) {
+    if (status) {
+      status.textContent = 'Failed to load student faces. Try again.';
+      status.style.color = 'var(--danger)';
+    }
+  }
+}
+
+function populateFaceStudentSelect(students) {
+  const select = document.getElementById('face-student-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">Select student</option>';
+  students.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s._id;
+    opt.textContent = s.name;
+    select.appendChild(opt);
+  });
+}
+
+async function registerStudentFace() {
+  const studentId = document.getElementById('face-student-select')?.value;
+  const status    = document.getElementById('face-register-status');
+  if (!studentId) {
+    showToast('Select a student to register face.', 'warning');
+    return;
+  }
+
+  const video = document.getElementById('face-video');
+  if (!video || !video.videoWidth) {
+    showToast('Start the camera before registering a face.', 'warning');
+    return;
+  }
+
+  if (status) {
+    status.textContent = 'Capturing face template...';
+    status.style.color = 'var(--accent)';
+  }
+
+  try {
+    const detection = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.3 }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (!detection) {
+      if (status) status.textContent = 'No face detected. Move closer to the camera.';
+      showToast('No face found in the frame.', 'warning');
+      return;
+    }
+
+    const descriptor = Array.from(detection.descriptor);
+    const response = await apiPut(`/students/${studentId}/face-descriptor`, { descriptor });
+
+    if (response.success) {
+      showToast('Face template registered successfully.', 'success');
+      if (status) status.textContent = 'Face captured. Recognition ready.';
+      loadFaceAttendanceData(currentFaceCourseId);
+    } else {
+      showToast(response.message || 'Face registration failed.', 'danger');
+      if (status) status.textContent = 'Registration failed. Try again.';
+    }
+  } catch (err) {
+    showToast('Error capturing face. Try again.', 'danger');
+    if (status) status.textContent = 'Face capture error. Check console.';
+    console.error(err);
   }
 }
 
@@ -3252,13 +5224,13 @@ async function startFaceCamera() {
 
     const status = document.getElementById('face-status');
     if (status) {
-      status.textContent = '🟢 Camera chal raha hai — faces detect ho rahe hain...';
+      status.textContent = '🟢 Camera is running — detecting faces...';
       status.style.color = 'var(--success)';
     }
 
     startFaceDetection();
   } catch(e) {
-    showToast('Camera access denied! Browser settings mein allow karo.', 'danger');
+    showToast('Camera access denied! Allow in browser settings.', 'danger');
   }
 }
 
@@ -3267,7 +5239,7 @@ function startFaceDetection() {
   const canvas = document.getElementById('face-canvas');
   if (!video || !canvas) return;
 
-  let faceCount = 0;
+  let previousCount = 0;
 
   faceDetectionLoop = setInterval(async () => {
     if (!video.videoWidth) return;
@@ -3276,72 +5248,86 @@ function startFaceDetection() {
 
     try {
       const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.3 }))
         .withFaceLandmarks()
-        .withFaceExpressions();
+        .withFaceDescriptors();
 
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Faces draw karo
-      detections.forEach((det, i) => {
+      const currentDetected = new Set();
+      const results = detections.map((det, i) => {
         const box = det.detection.box;
+        const match = faceMatcher ? faceMatcher.findBestMatch(det.descriptor) : { label: 'unknown', distance: 1 };
+        const student = knownStudents.find(s => s._id === match.label);
+        const label   = student ? student.name : (match.label === 'unknown' ? 'Unknown' : match.label);
+        const isKnown = Boolean(student);
+        if (isKnown) currentDetected.add(student._id);
 
-        // Rectangle draw karo
-        ctx.strokeStyle = '#4f6ef7';
-        ctx.lineWidth   = 2;
+        ctx.strokeStyle = isKnown ? '#22d3a0' : '#f97316';
+        ctx.lineWidth = 2;
         ctx.strokeRect(box.x, box.y, box.width, box.height);
 
-        // Label
-        ctx.fillStyle = '#4f6ef7';
-        ctx.fillRect(box.x, box.y - 22, 100, 22);
+        ctx.fillStyle = isKnown ? 'rgba(34,211,160,0.85)' : 'rgba(249,115,22,0.85)';
+        ctx.fillRect(box.x, box.y - 24, Math.min(200, box.width), 22);
         ctx.fillStyle = 'white';
         ctx.font = '13px Arial';
-        ctx.fillText(`Face ${i+1}`, box.x + 4, box.y - 6);
+        ctx.fillText(label, box.x + 6, box.y - 6);
 
-        // Expression detect karo
-        const exp  = det.expressions;
-        const mood = Object.keys(exp).reduce((a,b) => exp[a] > exp[b] ? a : b);
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(box.x, box.y + box.height, 100, 20);
+        ctx.fillRect(box.x, box.y + box.height, 110, 20);
         ctx.fillStyle = 'white';
         ctx.font = '11px Arial';
-        ctx.fillText(mood, box.x + 4, box.y + box.height + 14);
+        ctx.fillText(`${isKnown ? 'Matched' : 'Unknown'} ${match.distance ? match.distance.toFixed(2) : ''}`, box.x + 6, box.y + box.height + 14);
+
+        return { label, score: match.distance, isKnown, studentId: student?._id };
       });
 
-      // Log update karo
-      if (detections.length !== faceCount) {
-        faceCount = detections.length;
-        updateFaceLog(detections.length);
+      detectedStudents = currentDetected;
+      updateFaceLog(results);
+
+      if (results.length !== previousCount) {
+        previousCount = results.length;
       }
-    } catch(e) {}
-  }, 500);
+    } catch(e) {
+      console.error('Face detection error', e);
+    }
+  }, 200);
 }
 
-function updateFaceLog(count) {
+function updateFaceLog(results) {
   const log = document.getElementById('face-attendance-log');
   if (!log) return;
 
-  if (count === 0) {
-    log.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted)">Koi face detect nahi hua</div>`;
+  if (!results?.length) {
+    log.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted)">No face detected</div>`;
     return;
   }
 
+  const knownMatches = results.filter(r => r.isKnown);
+  const unknownCount = results.filter(r => !r.isKnown).length;
+
   log.innerHTML = `
-    <div style="padding:12px;background:var(--success-soft);border-radius:8px;margin-bottom:8px;border:1px solid rgba(34,211,160,.2)">
-      <div style="font-weight:600;color:var(--success)">${count} Face(s) Detected!</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${new Date().toLocaleTimeString('en-IN')}</div>
+    <div style="padding:12px;background:var(--bg-card);border-radius:8px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+        <div style="font-weight:700;color:var(--text-primary)">${results.length} face(s) detected</div>
+        <div style="font-size:12px;color:var(--text-muted)">${new Date().toLocaleTimeString('en-IN')}</div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:${knownMatches.length ? 'var(--success)' : 'var(--warning)'}">
+        ${knownMatches.length ? `${knownMatches.length} registered face(s) matched` : 'No registered face matched yet.'}
+      </div>
     </div>
-    ${Array.from({length:count},(_,i)=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent)">
-          <i class="fa-solid fa-face-smile"></i>
+    ${results.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--bg-input)">
+        <div style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${r.isKnown ? 'var(--success-soft)' : 'var(--warning-soft)'};color:${r.isKnown ? 'var(--success)' : 'var(--warning)'}">
+          <i class="fa-solid ${r.isKnown ? 'fa-user-check' : 'fa-user-slash'}"></i>
         </div>
-        <div>
-          <div style="font-weight:600;font-size:13px">Face ${i+1} Detected</div>
-          <div style="font-size:11px;color:var(--success)">✅ Present mark hoga</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${r.label}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${r.isKnown ? 'Registered student' : 'Unknown person'} · Confidence ${r.score?.toFixed(2) || '--'}</div>
         </div>
-      </div>`).join('')}`;
+      </div>`).join('')}
+    ${unknownCount ? `<div style="padding:10px 12px;border-radius:10px;background:rgba(249,115,22,.06);color:var(--warning);font-size:12px">${unknownCount} unknown face(s) detected. Please register the student face template.</div>` : ''}`;
 }
 
 function stopFaceCamera() {
@@ -3356,20 +5342,62 @@ function stopFaceCamera() {
   const video = document.getElementById('face-video');
   if (video) video.srcObject = null;
   const status = document.getElementById('face-status');
-  if (status) { status.textContent = 'Camera band ho gaya'; status.style.color = 'var(--text-muted)'; }
-  showToast('Camera band ho gaya', 'accent');
+  if (status) {
+    status.textContent = 'Camera stopped';
+    status.style.color = 'var(--text-muted)';
+  }
+  showToast('Camera stopped', 'accent');
 }
 
 async function saveFaceAttendance() {
   const courseId = document.getElementById('face-course-select')?.value;
-  if (!courseId) { showToast('Course select karo pehle', 'warning'); return; }
+  if (!courseId) { showToast('Select course first', 'warning'); return; }
 
-  const log = document.getElementById('face-attendance-log');
-  const faces = log?.querySelectorAll('[style*="border"]')?.length || 0;
+  const courseStudents = window._faceCourseStudents || [];
+  if (!courseStudents.length) {
+    showToast('Load course student list and register faces first.', 'warning');
+    return;
+  }
 
-  if (faces === 0) { showToast('Pehle camera se faces detect karo', 'warning'); return; }
+  const records = courseStudents.map(s => ({
+    studentId: s._id,
+    status: detectedStudents.has(s._id) ? 'present' : 'absent'
+  }));
 
-  showToast(`${faces} students ki attendance save ho gayi!`, 'success');
-  stopFaceCamera();
+  if (!records.length) {
+    showToast('No student records available for this course.', 'warning');
+    return;
+  }
+
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const res = await apiPost('/attendance', {
+      courseId,
+      date: today,
+      records,
+      facultyId: getUser().id
+    });
+
+    if (res.success) {
+      showToast('Attendance saved successfully!', 'success');
+      stopFaceCamera();
+    } else {
+      showToast(res.message || 'Unable to save attendance', 'danger');
+    }
+  } catch (err) {
+    showToast('Server error saving attendance.', 'danger');
+    console.error(err);
+  }
 }
-
+function togglePassword(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon  = document.getElementById(iconId);
+  if (!input || !icon) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fa-solid fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fa-solid fa-eye';
+  }
+}

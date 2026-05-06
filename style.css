@@ -65,7 +65,13 @@ body {
   font-size: 14px;
   line-height: 1.6;
   overflow-x: hidden;
-  transition: background var(--transition), color var(--transition);
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+html.theme-transition, html.theme-transition body, html.theme-transition body * {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, fill 0.35s ease, stroke 0.35s ease !important;
+}
+body, .app, .sidebar, .main-content, .top-bar, .card, .stat-card, .btn, input, select, textarea, .nav-item, .sidebar-footer, .page-header, .chatbot-window, .slide-panel, .overlay {
+  transition: background-color var(--transition), color var(--transition), border-color var(--transition), box-shadow var(--transition);
 }
 h1,h2,h3,h4,h5 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
 a { color: var(--accent); text-decoration: none; }
@@ -337,7 +343,23 @@ button { cursor: pointer; font-family: 'DM Sans', sans-serif; border: none; outl
 .top-bar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .notif-btn { background: none; font-size: 15px; position: relative; padding: 6px 8px; color: var(--text-secondary); transition: color var(--transition); border-radius: 8px; }
 .notif-btn:hover { background: var(--accent-soft); color: var(--accent); }
-.notif-badge { position: absolute; top: 0; right: 0; background: var(--danger); color: white; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.notif-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: var(--danger);
+  color: white;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
 
 .content-area { flex: 1; padding: 24px; overflow-y: auto; }
 
@@ -684,6 +706,26 @@ tbody tr:hover { background: var(--bg-card-hover); }
 .exam-date { width: 50px; text-align: center; flex-shrink: 0; }
 .exam-date .date-num { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--accent); }
 .exam-date .date-month { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+
+.exam-question-list {
+  display: grid;
+  gap: 10px;
+}
+
+.radio-item {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  background: var(--bg-body);
+}
+
+.radio-item:hover { background: rgba(59,130,246,0.06); }
+.radio-item.selected {
+  border-color: var(--accent);
+  background: rgba(56,189,248,0.12);
+}
 
 /* Library */
 .book-card {

@@ -53,14 +53,23 @@
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="login-password" placeholder="••••••••" value="password123">
+        <div style="position:relative">
+  <input type="password" id="login-password" placeholder="••••••••" style="padding-right:44px;width:100%">
+  <button type="button" onclick="togglePassword('login-password','eye-login')"
+    style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:4px">
+    <i class="fa-solid fa-eye" id="eye-login"></i>
+  </button>
+</div>
+      </div>
+      <div class="forgot-password-row" style="text-align:right;margin-bottom:16px">
+        <a href="#" onclick="openForgotPassword(event)" style="font-size:13px;color:var(--accent);text-decoration:none;">Forgot Password?</a>
       </div>
       <div class="form-group">
         <label>Sign in as</label>
         <div class="role-selector">
-          <button class="role-btn active" data-role="student">🎓 Student</button>
-          <button class="role-btn" data-role="faculty">👨‍🏫 Faculty</button>
-          <button class="role-btn" data-role="admin">🏫 Admin</button>
+          <button class="role-btn active" data-role="student"><i class="fa-solid fa-graduation-cap"></i> Student</button>
+          <button class="role-btn" data-role="faculty"><i class="fa-solid fa-chalkboard-teacher"></i> Faculty</button>
+          <button class="role-btn" data-role="admin"><i class="fa-solid fa-school"></i> Admin</button>
         </div>
       </div>
       <div class="form-divider"><span>or</span></div>
@@ -73,7 +82,6 @@
         <input type="text" id="otp-input" placeholder="Enter 6-digit OTP" style="margin-top:8px;display:none;">
       </div>
       <button class="btn-primary" onclick="handleLogin()">Sign In →</button>
-      <p class="auth-hint">Demo: Use any email/password to login with selected role</p>
     </div>
 
     <!-- SIGNUP FORM -->
@@ -87,14 +95,22 @@
       <div class="form-group">
         <label>Register as</label>
         <div class="role-selector">
-          <button class="role-btn active" data-role="student">🎓 Student</button>
-          <button class="role-btn" data-role="faculty">👨‍🏫 Faculty</button>
+          <button class="role-btn active" data-role="student"><i class="fa-solid fa-graduation-cap"></i> Student</button>
+          <button class="role-btn" data-role="faculty"><i class="fa-solid fa-chalkboard-teacher"></i> Faculty</button>
         </div>
       </div>
       <div class="form-group"><label>Department</label>
         <select><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>Management</option></select>
       </div>
-      <div class="form-group"><label>Password</label><input type="password" placeholder="Create password"></div>
+      <div class="form-group"><label>Password</label>
+        <div style="position:relative">
+          <input type="password" placeholder="Create password" style="padding-right:44px;width:100%">
+          <button type="button" onclick="togglePassword('signup-password','eye-signup')"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:4px">
+            <i class="fa-solid fa-eye" id="eye-signup"></i>
+          </button>
+        </div>
+      </div>
       <button class="btn-primary" onclick="handleSignup()">Create Account →</button>
     </div>
   </div>
@@ -133,7 +149,7 @@
 
     <div class="sidebar-footer">
       <button class="theme-toggle" onclick="toggleTheme()">
-        <span id="theme-icon">☀️</span> <span id="theme-label">Light Mode</span>
+        <span id="theme-icon"><i class="fa-solid fa-sun"></i></span> <span id="theme-label">Light Mode</span>
       </button>
       <button class="logout-btn" onclick="logout()">← Logout</button>
     </div>
@@ -142,12 +158,12 @@
   <!-- MAIN CONTENT -->
   <main class="main-content">
     <header class="top-bar">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="hamburger" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
       <div class="top-bar-title" id="page-title">Dashboard</div>
       <div class="top-bar-actions">
         <button class="notif-btn" onclick="showPanel('notifications')">
            <i class="fa-solid fa-bell"></i>
-           <span class="notif-badge">3</span>
+           <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
         </button>
         <div class="user-mini" onclick="showPanel('profile')">
           <div class="user-avatar small" id="top-avatar">JS</div>
@@ -163,13 +179,13 @@
 
 <!-- ═══════════════════ AI CHATBOT ═══════════════════ -->
 <div class="chatbot-fab" onclick="toggleChat()" id="chat-fab">
-  <span id="chat-fab-icon">🤖</span>
+  <span id="chat-fab-icon"><i class="fa-solid fa-robot"></i></span>
 </div>
 <div class="chatbot-window" id="chatbot-window">
   <div class="chat-header">
     <div>
       <div style="font-weight:600">UniBot AI Assistant</div>
-      <div style="font-size:11px;opacity:.6">Always here to help • Powered by Claude</div>
+      <div style="font-size:11px;opacity:.6">Always here to help • Powered by OpenAI</div>
     </div>
     <button onclick="toggleChat()">×</button>
   </div>
@@ -189,27 +205,8 @@
   <div class="panel-header">
     <span>Notifications</span><button onclick="closePanel('notifications')">×</button>
   </div>
-  <div class="panel-content">
-    <div class="notif-item unread">
-      <div class="notif-icon">📢</div>
-      <div><div class="notif-title">Mid-term Exam Schedule Released</div><div class="notif-time">2 hours ago</div></div>
-    </div>
-    <div class="notif-item unread">
-      <div class="notif-icon">📝</div>
-      <div><div class="notif-title">Assignment due: DBMS Lab Report</div><div class="notif-time">5 hours ago</div></div>
-    </div>
-    <div class="notif-item unread">
-      <div class="notif-icon">💰</div>
-      <div><div class="notif-title">Fee Payment Reminder - Due in 3 days</div><div class="notif-time">1 day ago</div></div>
-    </div>
-    <div class="notif-item">
-      <div class="notif-icon">🎓</div>
-      <div><div class="notif-title">New course material uploaded: ML Unit 4</div><div class="notif-time">2 days ago</div></div>
-    </div>
-    <div class="notif-item">
-      <div class="notif-icon">🏆</div>
-      <div><div class="notif-title">You ranked #3 in Data Structures</div><div class="notif-time">3 days ago</div></div>
-    </div>
+  <div class="panel-content" id="notifications-content">
+    <!-- Dynamic notifications loaded here -->
   </div>
 </div>
 

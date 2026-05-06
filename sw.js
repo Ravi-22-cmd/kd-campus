@@ -53,7 +53,7 @@ self.addEventListener('fetch', event => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip API calls (backend se seedha lo)
+  // Skip API calls (load directly from backend)
   if (event.request.url.includes('localhost:3000') ||
       event.request.url.includes('anthropic.com') ||
       event.request.url.includes('razorpay.com')) {
@@ -63,7 +63,7 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Valid response? Cache mein save karo
+        // Valid response? Save in cache
         if (response && response.status === 200) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -73,11 +73,11 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => {
-        // Network nahi hai? Cache se do
+        // No network? Serve from cache
         return caches.match(event.request)
           .then(cached => {
             if (cached) return cached;
-            // Koi bhi nahi? Offline page do
+            // None? Serve offline page
             return caches.match(OFFLINE_PAGE);
           });
       })
@@ -88,7 +88,7 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   const data = event.data?.json() || {};
   const title   = data.title   || 'KD Campus';
-  const body    = data.body    || 'Aapke liye ek notification hai!';
+  const body    = data.body    || 'You have a notification!';
   const icon    = data.icon    || '/icon-192.png';
   const badge   = data.badge   || '/icon-192.png';
 

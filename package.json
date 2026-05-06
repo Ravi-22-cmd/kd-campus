@@ -1,0 +1,11 @@
+{
+  "name": "krmu-campus-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for KD Campus",
+  "main": "index .html",
+  "scripts": {
+    "start": "npx http-server . -p 8080 -c-1"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
