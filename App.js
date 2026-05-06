@@ -306,21 +306,22 @@ function sendOTP() {
 
 
 async function handleOTPLogin() {
-  const email = document.getElementById('login-email')?.value?.trim();
-  const otp   = document.getElementById('otp-input')?.value?.trim();
-  if (!email) { showToast('Email daalo','warning'); return; }
-  if (!otp)   { showToast('OTP daalo','warning'); return; }
+  // prevent duplicate verify calls
+  if (window.__otpVerifying) return;
+  window.__otpVerifying = true;
 
   const btn = document.querySelector('#login-form .btn-primary');
-  if (btn) { btn.textContent='Verifying OTP...'; btn.disabled=true; }
-
-  const role = currentRole || document.querySelector('#login-form .role-btn.active')?.dataset?.role || 'student';
-
   try {
-    const data = await apiPost('/auth/otp/verify', { email, otp, role });
-    if (!data.success) {
-      showToast(data.message || 'OTP verify failed','danger');
-      if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
+    const email = document.getElementById('login-email')?.value?.trim();
+    const otp   = document.getElementById('otp-input')?.value?.trim();
+    if (!email) { showToast('Email daalo','warning'); return; }
+    if (!otp)   { showToast('OTP daalo','warning'); return; }
+
+    if (btn) { btn.textContent='Verifying OTP...'; btn.disabled=true; }
+
+    const data = await apiPost('/auth/otp/verify', { email, otp });
+    if (!data?.success) {
+      showToast(data?.message || 'OTP verify failed','danger');
       return;
     }
 
@@ -331,7 +332,7 @@ async function handleOTPLogin() {
     currentUser = {
       name: data.user.name,
       initials: data.user.name.split(' ').map(n=>n[0]).join('').toUpperCase(),
-      role: `${data.user.role.charAt(0).toUpperCase()+data.user.role.slice(1)} · ${getUser().department||'KD Campus'}`,
+      role: `${data.user.role.charAt(0).toUpperCase()+data.user.role.slice(1)} · ${(data.user.department)||getUser().department||'KD Campus'}`,
       id: data.user.id,
     };
 
@@ -342,25 +343,50 @@ async function handleOTPLogin() {
     showToast('Server error while verifying OTP','danger');
   } finally {
     if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
+    window.__otpVerifying = false;
   }
 }
 
 async function handleLogin() {
+  // OTP flow: if OTP input is visible, password login should not generate a fresh OTP.
+  const otpInput = document.getElementById('otp-input');
+  if (otpInput && otpInput.style.display !== 'none') {
+    showToast('First OTP verify karo','warning');
+    return;
+  }
+
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value.trim();
   if (!email || !password) { showToast('Email aur password bharo','warning'); return; }
 
+
   const btn = document.querySelector('#login-form .btn-primary');
-  btn.textContent = 'Logging in...'; btn.disabled = true;
+  if (btn) { btn.textContent = 'Logging in...'; btn.disabled = true; }
 
   try {
     const res  = await fetch(`${API}/auth/login`, {
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password})
     });
-    const data = await res.json();
+
+    const data = await res.json().catch(() => ({}));
+
+    // ✅ OTP-first login flow (backend sends otpRequired true but no JWT yet)
+    if (data?.otpRequired) {
+      showToast(data.message || 'OTP sent. Please verify OTP to continue.','accent');
+
+      const otpInput = document.getElementById('otp-input');
+      if (otpInput) {
+        otpInput.style.display = 'block';
+        otpInput.focus();
+      }
+
+      if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
+      return;
+    }
+
     if (!data.success) {
       showToast(data.message || 'Login failed','error');
-      btn.textContent='Sign In →'; btn.disabled=false;
+      if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
       return;
     }
 
@@ -378,7 +404,7 @@ async function handleLogin() {
   } catch(err) {
     console.log('Network error:', err);
     showToast('Server/network error. Please try again.', 'danger');
-    btn.textContent='Sign In →'; btn.disabled=false;
+    if (btn) { btn.textContent='Sign In →'; btn.disabled=false; }
   }
 
 }
