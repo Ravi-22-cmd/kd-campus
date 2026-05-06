@@ -1,6 +1,21 @@
 const router = require('express').Router();
 const { Notice, Assignment, Course, Fee } = require('../models/models');
 
+// Node versions may not have global fetch enabled
+const fetchFn = global.fetch || (() => {
+  try {
+    return require('node-fetch');
+  } catch (e) {
+    return null;
+  }
+})();
+
+function fetch(url, options) {
+  if (!fetchFn) throw new Error('fetch is not available in this Node runtime. Install node-fetch or upgrade Node.');
+  return fetchFn(url, options);
+}
+
+
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -151,4 +166,11 @@ router.post('/', async (req, res) => {
   }
 });
 
+// (optional) kept for future safety improvements
+// function safeJsonParse(text) {
+//   try { return JSON.parse(text); } catch { return null; }
+// }
+
 module.exports = router;
+
+

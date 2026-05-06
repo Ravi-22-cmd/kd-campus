@@ -6,8 +6,14 @@ const nodemailer = require('nodemailer');
 const { body, validationResult } = require('express-validator');
 const { User } = require('../models/models');
 
-const JWT_SECRET = 'universe_super_secret_key_2026';
-const generateToken = (id) => jwt.sign({ id }, JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (id) => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    // Fail fast so tokens never get generated with unknown secret.
+    throw new Error('JWT_SECRET is not set in environment variables');
+  }
+  return jwt.sign({ id }, secret, { expiresIn: '7d' });
+};
 
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT;
@@ -83,12 +89,68 @@ router.post('/login', [
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ success: false, message: 'Email or password is incorrect' });
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ success: false, message: 'Email or password is incorrect' });
+
     if (!user.isApproved) return res.status(403).json({ success: false, message: 'Not approved by admin' });
-    res.json({ success: true, token: generateToken(user._id), user: { id: user._id, name: user.name, email: user.email, role: user.role } });
-  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+
+    // OTP compulsory login: password is verified, now user must verify OTP to receive JWT.
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+
+    user.otpCodeHash = otpHash;
+    user.otpCodeExpiry = new Date(Date.now() + 1000 * 60 * 10); // 10 min
+    await user.save();
+
+    const SMTP_HOST = process.env.SMTP_HOST;
+    const SMTP_PORT = process.env.SMTP_PORT;
+    const SMTP_USER = process.env.SMTP_USER;
+    const SMTP_PASS = process.env.SMTP_PASS;
+    const EMAIL_FROM = process.env.EMAIL_FROM || 'no-reply@kdcampus.edu';
+
+    if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+      console.log(`OTP for ${email}: ${otp}`);
+      return res.json({
+        success: true,
+        otpRequired: true,
+        message: 'OTP sent (check server logs).',
+      });
+    }
+
+    const transporter = nodemailer.createTransport({
+
+      host: SMTP_HOST,
+      port: Number(SMTP_PORT),
+      secure: Number(SMTP_PORT) === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS }
+    });
+
+    const html = `
+      <p>Hi,</p>
+      <p>Your KD Campus login OTP is:</p>
+      <p style="font-size:20px;font-weight:bold;padding:12px 16px;background:#f4f6ff;border-radius:10px;display:inline-block">${otp}</p>
+      <p>It is valid for 10 minutes.</p>
+      <p>If you did not request this, ignore this email.</p>
+      <p>Thanks,<br/>KD Campus Team</p>`;
+
+    await transporter.sendMail({
+      from: EMAIL_FROM,
+      to: email,
+      subject: 'KD Campus Login OTP',
+      html
+    });
+
+    return res.json({
+      success: true,
+      otpRequired: true,
+      message: 'OTP sent to your email. Please verify OTP to complete login.'
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
 });
+
 
 router.post('/forgot', [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required')
@@ -258,7 +320,9 @@ router.get('/me', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ success: false, message: 'Token not provided' });
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error('JWT_SECRET is not set in environment variables');
+    const decoded = jwt.verify(token, secret);
     const user = await User.findById(decoded.id).select('-password');
     res.json({ success: true, user });
   } catch (err) { res.status(401).json({ success: false, message: 'Token is invalid' }); }

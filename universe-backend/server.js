@@ -19,6 +19,8 @@ const User     = models.User;
 const Exam     = models.Exam;
 const { protect } = require('./middleware/auth');
 
+// Attach auto CSV export hooks (creates universe-backend/exports/*.csv)
+try { require('./utils/csvHooks').attachHooks(models); } catch (e) { console.error('[CSV hooks] init failed:', e?.message || e); }
 
 const app    = express();
 const server = http.createServer(app);
@@ -163,7 +165,7 @@ io.on('connection', (socket) => {
   });
 });
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 8000 })
   .then(async () => {
     console.log('✅ MongoDB Connected!');
 
@@ -229,4 +231,11 @@ mongoose.connect(process.env.MONGO_URI)
       console.log(`🚀 Server + Socket.io on http://localhost:${process.env.PORT || 3000}`);
     });
   })
-  .catch(err => console.log('❌ MongoDB Error:', err.message));
+.catch(err => {
+    console.error('❌ MongoDB Error:', err.message);
+    console.error('Backend will still start WITHOUT DB features.');
+    // Start server even if DB is down (frontend won’t randomly fail to load/refresh)
+    server.listen(process.env.PORT || 3000, () => {
+      console.log(`🚧 Server started on http://localhost:${process.env.PORT || 3000} (MongoDB down)`);
+    });
+  });

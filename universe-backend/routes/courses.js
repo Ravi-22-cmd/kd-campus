@@ -31,4 +31,56 @@ router.delete('/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+// Enroll/Unenroll endpoints
+router.post('/:courseId/enroll', async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const studentId = req.user?._id;
+    if (!studentId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    // Only students can enroll
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ success: false, message: 'Only students can enroll' });
+    }
+
+    course.students = course.students || [];
+    const objId = studentId; // already an ObjectId
+    if (!course.students.some(id => id.toString() === objId.toString())) {
+      course.students.push(objId);
+      await course.save();
+    }
+
+    const updated = await Course.findById(courseId).populate('students', 'name email');
+    return res.json({ success: true, course: updated });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/:courseId/unenroll', async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const studentId = req.user?._id;
+    if (!studentId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ success: false, message: 'Only students can unenroll' });
+    }
+
+    course.students = (course.students || []).filter(id => id.toString() !== studentId.toString());
+    await course.save();
+
+    const updated = await Course.findById(courseId).populate('students', 'name email');
+    return res.json({ success: true, course: updated });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;
