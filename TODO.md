@@ -1,6 +1,11 @@
-- [ ] Add missing `renderDepartments(area)` implementation in `App.js` for admin Departments page.
-- [ ] Implement UI to list departments, plus add department form.
-- [ ] Wire create/delete actions to backend endpoints under `/api/departments`.
-- [ ] Update navbar renderer already references `renderDepartments` (verify no further missing references).
-- [ ] Smoke-test by loading app and navigating as admin to “Departments”.
+# TODO
+
+- [x] Inspect current OTP endpoints and login flow.
+- [x] Modify `/api/auth/login` so OTP becomes compulsory after email+password validation.
+
+- [x] Ensure OTP verify endpoint remains the only place that issues JWT.
+
+- [ ] Run backend lint/tests (if available) or start server to ensure routes work.
+
+
 

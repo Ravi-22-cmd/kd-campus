@@ -1,7 +1,8 @@
 // ══════════════════════════════════════
 // GLOBAL API CONFIG
 // ══════════════════════════════════════
-const API = 'http://localhost:3000/api';
+const API_BASE = (window.__API_BASE__ || `http://${location.hostname}:3000`).replace(/\/$/, '');
+const API = `${API_BASE}/api`;
 
 const apiGet = async (url) => {
   const token = localStorage.getItem('token');
@@ -44,6 +45,33 @@ let currentUser = null;
 let currentRole = 'student';
 let currentPage = 'dashboard';
 let chatOpen    = false;
+
+// ── Refresh Persistence (avoid logout on refresh) ──
+(function bootAuthOnLoad() {
+  try {
+    const token = localStorage.getItem('token');
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
+    if (!token || !userData) return;
+
+    // Normalize role (backend returns: student/faculty/admin)
+    const roleRaw = userData.role || userData?.user?.role || 'student';
+    const role = String(roleRaw).toLowerCase().includes('faculty')
+      ? 'faculty'
+      : String(roleRaw).toLowerCase().includes('admin')
+        ? 'admin'
+        : 'student';
+
+    // Only init UI if saved user has name/id
+    if (userData.name || userData.id) {
+      // Delay 0ms to ensure DOM is ready & event listeners attached
+      setTimeout(() => initApp(role), 0);
+    }
+  } catch (e) {
+    console.warn('[bootAuthOnLoad] failed:', e);
+  }
+})();
+
 
 // ── Demo Data (fallback only) ──
 const demoData = {
@@ -584,6 +612,15 @@ function renderNav(role) {
 
 function navigateTo(page) {
   currentPage = page;
+  // Maintain back-stack so browser back can go to previous in-app page
+  try {
+    if (window.location?.hash?.startsWith('#/')) {
+      // no-op
+    }
+    const newHash = `#/${page}`;
+    if (window.location.hash !== newHash) window.history.pushState({ page }, '', newHash);
+  } catch (_) {}
+
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
 
@@ -1254,37 +1291,63 @@ function renderEnrolledCourses(courses, enrolledIds, colors, icons) {
   }).join('');
 }
 
-function enrollCourse(courseId, courseName) {
-  const user       = getUser();
-  const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
+async function enrollCourse(courseId, courseName) {
+  const user = getUser();
+  if (!user?.id) { showToast('Login first','warning'); return; }
 
-  if (!enrolledIds.includes(courseId)) {
-    enrolledIds.push(courseId);
-    localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(enrolledIds));
-  }
+  try {
+    const res = await apiPost(`/courses/${courseId}/enroll`, {});
+    if (!res.success) {
+      showToast(res.message || 'Enroll failed','danger');
+      return;
+    }
 
-  showToast(`Enrolled in ${courseName}!`, 'success');
+    // Keep localStorage for UI/UX speed
+    const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
+    if (!enrolledIds.includes(courseId)) {
+      enrolledIds.push(courseId);
+      localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(enrolledIds));
+    }
 
-  // Update card
-  const card = document.getElementById(`course-card-${courseId}`);
-  if (card) {
-    const footer = card.querySelector('.course-footer');
-    const badge  = card.querySelector('.badge');
-    if (badge)  { badge.textContent = '✓ Enrolled'; badge.className = 'badge badge-success'; }
-    if (footer) footer.innerHTML = `
-      <button class="btn btn-ghost btn-sm" onclick="unenrollCourse('${courseId}','${courseName}')">Unenroll</button>
-      <button class="btn btn-accent btn-sm" onclick="navigateTo('library')">📖 Materials</button>`;
+    showToast(`Enrolled in ${courseName}!`, 'success');
+
+    // Update card
+    const card = document.getElementById(`course-card-${courseId}`);
+    if (card) {
+      const footer = card.querySelector('.course-footer');
+      const badge  = card.querySelector('.badge');
+      if (badge) { badge.textContent = '✓ Enrolled'; badge.className = 'badge badge-success'; }
+      if (footer) footer.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="unenrollCourse('${courseId}','${courseName}')">Unenroll</button>
+        <button class="btn btn-accent btn-sm" onclick="navigateTo('library')">📖 Materials</button>`;
+    }
+  } catch (e) {
+    showToast('Server error while enrolling','danger');
   }
 }
 
-function unenrollCourse(courseId, courseName) {
+async function unenrollCourse(courseId, courseName) {
   if (!confirm(`Unenroll from ${courseName}?`)) return;
-  const user        = getUser();
-  const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
-  const updated     = enrolledIds.filter(id => id !== courseId);
-  localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(updated));
-  showToast(`Unenrolled from ${courseName}`, 'warning');
-  renderCourses(document.getElementById('content-area'));
+  const user = getUser();
+  if (!user?.id) { showToast('Login first','warning'); return; }
+
+  try {
+    const res = await apiPost(`/courses/${courseId}/unenroll`, {});
+    if (!res.success) {
+      showToast(res.message || 'Unenroll failed','danger');
+      return;
+    }
+
+    // Update localStorage for UI
+    const enrolledIds = JSON.parse(localStorage.getItem(`enrolled_${user.id}`) || '[]');
+    const updated = enrolledIds.filter(id => id !== courseId);
+    localStorage.setItem(`enrolled_${user.id}`, JSON.stringify(updated));
+
+    showToast(`Unenrolled from ${courseName}`, 'warning');
+    renderCourses(document.getElementById('content-area'));
+  } catch (e) {
+    showToast('Server error while unenrolling','danger');
+  }
 }
 
 async function renderTimetable(area) {
@@ -1743,7 +1806,7 @@ function initSocket() {
     return;
   }
 
-  socket = io('http://localhost:3000', {
+socket = io(API_BASE, {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnectionAttempts: 5,
